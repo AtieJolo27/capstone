@@ -101,7 +101,7 @@ const index = () => {
                                 backgroundColor="#738f52"
                             >
                                 {percentage => (
-                                    <Text className="text-2xl font-bold color-gray-600 text-center">{percentage}%</Text>
+                                    <Text className="text-2xl font-bold color-green-600 text-center">{percentage}%</Text>
                                 )}
                             </AnimatedCircularProgress>
 
