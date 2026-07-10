@@ -1,10 +1,12 @@
+import NutrientHistoryChart from '@/app/components/HistoryChart'
 import React from 'react'
-import { StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 
 const index = () => {
   return (
     <View>
-      <Text>Home</Text>
+      <NutrientHistoryChart />
+
     </View>
   )
 }
