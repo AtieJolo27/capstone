@@ -1,48 +1,84 @@
+import Best_Crop from '@/app/components/Best_Crop';
 import Recommended_Crops from '@/app/components/Recommended_Crops';
 import React, { useEffect, useState } from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
+import { FlatList, Text, View } from 'react-native';
 import { supabase } from '../../../lib/supabaseClient';
 
+interface CropRecommendation {
+  crop: string;
+  confidence: number;
+}
+
+interface CropPrediction {
+  id: number;
+  best_crop: string;
+  recommendations: CropRecommendation[];
+  [key: string]: any;
+}
+
 export default function Crops() {
-  const [crops, setCrops] = useState<any[]>([]);
+  const [crops, setCrops] = useState<CropPrediction[]>([]);
 
   useEffect(() => {
     getCrops();
 
     const channel = supabase
-          .channel('crop_predictions')
-          .on('postgres_changes',
-            {event: '*', schema: 'public', table: 'crop_predictions'},
-            (payload) => {
-              console.log("Changes Detected", payload)
-              getCrops();
-            }
-          )
-          .subscribe();
+      .channel('crop_predictions')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'crop_predictions' },
+        (payload) => {
+          console.log("Changes Detected", payload)
+          getCrops();
+        }
+      )
+      .subscribe();
 
-          return () => {
-            supabase.removeChannel(channel);
-          }
+    return () => {
+      supabase.removeChannel(channel);
+    }
   }, []);
 
   async function getCrops() {
-    const { data, error } = await supabase.from('crop_predictions').select()
-    console.log('data:', data)
-    console.log('error:', error)
-    setCrops(data ?? [])
+    const { data, error } = await supabase.from('crop_predictions').select();
+    console.log('data:', data);
+    console.log('error:', error);
+    setCrops(data ?? []);
   }
+
+  // assuming one active reading — grab the latest row
+  const latest = crops[0];
+
+  const sortedRecs = [...(latest?.recommendations ?? [])]
+    .filter((r) => r.confidence > 0)
+    .sort((a, b) => b.confidence - a.confidence);
+
+  const bestRec = sortedRecs[0];
+  const otherRecs = sortedRecs.slice(1);
+
   return (
-    <View>
+    <View className="p-5">
+      {latest && bestRec && (
+        <Best_Crop
+          crop_name={latest.best_crop}
+          percentage={Math.round(bestRec.confidence)}
+        />
+      )}
+
+      <View className="mt-4 mb-2">
+        <Text className="text-lg font-bold text-gray-600">Other Recommendations</Text>
+      </View>
+
       <FlatList
-        data={crops}
-        keyExtractor={(item) => item.id.toString()}
+        data={otherRecs}
+        keyExtractor={(item) => item.crop}
         renderItem={({ item }) => (
-
-          <Recommended_Crops crop_name={item.recommended_crop} percentage={70} />
-
+          <Recommended_Crops
+            crop_name={item.crop}
+            percentage={Math.round(item.confidence)}
+          />
         )}
+        scrollEnabled={false}
       />
     </View>
   );
-}
-const styles = StyleSheet.create({})
+} 

@@ -4,22 +4,22 @@ import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import * as Progress from 'react-native-progress';
 
-interface Recommend_CropsProps {
+interface Best_CropProps {
     crop_name: string;
     percentage: number;
 }
 
 const getStatus = (percentage: number) => {
     if (percentage >= 80) {
-        return { color: '#259406', bg: '#EAF7E9', icon: 'checkmark-circle' as const };
+        return { color: '#259406', bg: '#EAF7E9', icon: 'checkmark-circle' as const, label: 'Great match' };
     } else if (percentage > 45) {
-        return { color: '#B8A400', bg: '#FCF9E3', icon: 'alert-circle' as const };
+        return { color: '#B8A400', bg: '#FCF9E3', icon: 'alert-circle' as const, label: 'Fair match' };
     } else {
-        return { color: '#BD0909', bg: '#FBEAEA', icon: 'close-circle' as const };
+        return { color: '#BD0909', bg: '#FBEAEA', icon: 'close-circle' as const, label: 'Poor match' };
     }
 };
 
-export default function Recommended_Crops({ crop_name, percentage }: Recommend_CropsProps) {
+export default function Best_Crop({ crop_name, percentage }: Best_CropProps) {
     const decimal = percentage / 100;
     const status = getStatus(percentage);
 
@@ -40,7 +40,11 @@ export default function Recommended_Crops({ crop_name, percentage }: Recommend_C
                 </View>
 
                 <View className="flex-1">
-                    <View className="flex-row items-center justify-between">
+                    <Text className="text-xs text-gray-600 uppercase tracking-wide">
+                        Best crop for your field
+                    </Text>
+
+                    <View className="flex-row items-center justify-between mt-0.5">
                         <Text className="font-bold text-base text-gray-800 capitalize">
                             {crop_name}
                         </Text>

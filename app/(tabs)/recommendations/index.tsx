@@ -61,6 +61,15 @@ export default function index() {
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
 
+          <Recommended_Crops crop_name={item.best_crop} percentage={70} />
+
+        )}
+      />
+      <FlatList
+        data={crops}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => (
+
           <Recommended_Crops crop_name={item.recommended_crop} percentage={70} />
 
         )}
