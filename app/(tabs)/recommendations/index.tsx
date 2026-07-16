@@ -1,80 +1,52 @@
-import Recommended_Crops from '@/app/components/Recommended_Crops';
-import React, { useEffect, useState } from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
-import { supabase } from '../../../lib/supabaseClient';
+import React, { useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-export default function index() {
-  const [crops, setCrops] = useState<any[]>([]);
+export default function ChatScreen() {
+  const [prompt, setPrompt] = useState('');
+  const [response, setResponse] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    getCrops();
-
-    const channel = supabase
-      .channel('crop_predictions')
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'crop_predictions' },
-        (payload) => {
-          console.log("Changes Detected", payload)
-          getCrops();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
+  const handleAskAI = async () => {
+    if (!prompt.trim()) return;
+    setLoading(true);
+    
+    try {
+      // In local development, Expo maps API routes relative to your origin
+      const res = await fetch('/api/groq', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt }),
+      });
+      
+      const json = await res.json();
+      setResponse(json.data || json.error);
+    } catch (err) {
+      setResponse('Failed to reach server backend.');
+    } finally {
+      setLoading(false);
     }
-  }, []);
+  };
 
-  async function getCrops() {
-    const { data, error } = await supabase.from('crop_predictions').select()
-    console.log('data:', data)
-    console.log('error:', error)
-    setCrops(data ?? [])
-  }
   return (
-    <View>
-      <View className="flex flex-row items-center justify-center gap-3 m-2">
-        <View className=" bg-red-300 p-2 rounded-lg">
-          <View className="flex flex-col items-center justify-center size-24">
-            <Text className="font-bold text-gray-800 ">Nitrogen</Text>
-            <Text className="font-bold text-2xl text-gray-800 ">Low</Text>
-            <Text className="">21 vs 30+</Text>
-          </View>
-        </View>
-       <View className=" bg-gray-400 p-2 rounded-lg">
-          <View className="flex flex-col items-center justify-center size-24">
-            <Text className="font-bold text-gray-800 ">Nitrogen</Text>
-            <Text className="font-bold text-2xl text-gray-800 ">Low</Text>
-            <Text className="">21 vs 30+</Text>
-          </View>
-        </View>
-       <View className=" bg-gray-400 p-2 rounded-lg">
-          <View className="flex flex-col items-center justify-center size-24">
-            <Text className="font-bold text-gray-800 ">Nitrogen</Text>
-            <Text className="font-bold text-2xl text-gray-800 ">Low</Text>
-            <Text className="">21 vs 30+</Text>
-          </View>
-        </View>
-      </View>
-      <FlatList
-        data={crops}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-
-          <Recommended_Crops crop_name={item.best_crop} percentage={70} />
-
-        )}
+    <View style={styles.container}>
+      <TextInput
+        style={styles.input}
+        placeholder="Type a message for Groq..."
+        value={prompt}
+        onChangeText={setPrompt}
       />
-      <FlatList
-        data={crops}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-
-          <Recommended_Crops crop_name={item.recommended_crop} percentage={70} />
-
-        )}
-      />
+      <TouchableOpacity style={styles.button} onPress={handleAskAI}>
+        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Send</Text>}
+      </TouchableOpacity>
+      <Text style={styles.resultText}>{response}</Text>
     </View>
   );
 }
-const styles = StyleSheet.create({})
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 20, justifyContent: 'center', backgroundColor: '#fff' },
+  input: { borderWidth: 1, borderColor: '#ccc', padding: 12, borderRadius: 8, marginBottom: 10 },
+  button: { backgroundColor: '#f15a24', padding: 15, borderRadius: 8, alignItems: 'center' },
+  buttonText: { color: '#fff', fontWeight: 'bold' },
+  resultText: { marginTop: 20, fontSize: 16, color: '#333' },
+});
