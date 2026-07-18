@@ -19,7 +19,7 @@ export default function RecommendationLayout(){
           </TouchableOpacity>
       )
     }}>
-            <Stack.Screen name="index" options={{title:"Recommendations"}} />
+            <Stack.Screen name="fertilizers" options={{title:"Fertilizers"}} />
         </Stack>
     );
 }

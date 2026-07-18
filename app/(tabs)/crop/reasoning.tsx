@@ -21,7 +21,7 @@ interface CropPrediction {
   [key: string]: any;
 }
 
-export default function Profile() {
+export default function Reasoning() {
   const { crop } = useLocalSearchParams<{ crop: string }>();
   const [latest, setLatest] = useState<CropPrediction | null>(null);
   
@@ -64,6 +64,9 @@ export default function Profile() {
 
     // Structured prompt template feeding raw metrics into Groq
     const dynamicPrompt = `
+
+    First, define the ${targetCrop}, its common tagalog term of filipino farmers and its purpose. Put tagalog translation of the sentence too.
+
       Explain why ${targetCrop} is suitable or the suitability of it
        for a soil with the following environmental metrics:
       - Nitrogen (N): ${data.nitrogen}

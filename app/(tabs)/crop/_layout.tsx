@@ -22,6 +22,6 @@ export default function FeedLayout() {
     }}>
     <Stack.Screen name="crops" options={{ title: "Crops" }} />
     <Stack.Screen name="recommendation" options={{ title: "Recommendations" }} />
-    <Stack.Screen name="profile" options={{ title: "Profile" }} />
+    <Stack.Screen name="reasoning" options={{ title: "Reasoning" }} />
   </Stack>);
 }

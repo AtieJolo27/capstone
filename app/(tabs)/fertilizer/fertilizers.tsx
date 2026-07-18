@@ -1,34 +1,34 @@
-import BestCrop from '@/app/components/BestCrop';
-import Recommended_Crops from '@/app/components/RecommendedCrops';
+import BestFertilizer from '@/app/components/BestFertilizer';
+import RecommendedFertilizer from '@/app/components/RecommendedFertilizer';
 import React, { useEffect, useState } from 'react';
 import { FlatList, Text, View } from 'react-native';
 import { supabase } from '../../../lib/supabaseClient';
 
-interface CropRecommendation {
-  crop: string;
+interface FertilizerRecommendation {
+  fertilizer: string;
   confidence: number;
 }
 
-interface CropPrediction {
+interface FertilizerPrediction {
   id: number;
-  best_crop: string;
-  recommendations: CropRecommendation[];
+  best_fertilizer: string;
+  recommendations: FertilizerRecommendation[];
   [key: string]: any;
 }
 
-export default function Crops() {
-  const [crops, setCrops] = useState<CropPrediction[]>([]);
+export default function Fertilizers() {
+  const [fertilizers, setFertilizers] = useState<FertilizerPrediction[]>([]);
 
   useEffect(() => {
-    getCrops();
+    getFertilizers();
 
     const channel = supabase
-      .channel('crop_predictions')
+      .channel('fertilizer_predictions')
       .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'crop_predictions' },
+        { event: '*', schema: 'public', table: 'fertilizer_predictions' },
         (payload) => {
           console.log("Changes Detected", payload)
-          getCrops();
+          getFertilizers();
         }
       )
       .subscribe();
@@ -38,15 +38,15 @@ export default function Crops() {
     }
   }, []);
 
-  async function getCrops() {
-    const { data, error } = await supabase.from('crop_predictions').select();
+  async function getFertilizers() {
+    const { data, error } = await supabase.from('fertilizer_predictions').select();
     console.log('data:', data);
     console.log('error:', error);
-    setCrops(data ?? []);
+    setFertilizers(data ?? []);
   }
 
   // assuming one active reading — grab the latest row
-  const latest = crops[0];
+  const latest = fertilizers[0];
 
   const sortedRecs = [...(latest?.recommendations ?? [])]
     .filter((r) => r.confidence > 0)
@@ -58,8 +58,8 @@ export default function Crops() {
   return (
     <View className="p-5">
       {latest && bestRec && (
-        <BestCrop
-          crop_name={latest.best_crop}
+        <BestFertilizer
+          fertilizer_name={latest.best_fertilizer}
           percentage={Math.round(bestRec.confidence)}
         />
       )}
@@ -70,10 +70,10 @@ export default function Crops() {
 
       <FlatList
         data={otherRecs}
-        keyExtractor={(item) => item.crop}
+        keyExtractor={(item) => item.fertilizer}
         renderItem={({ item }) => (
-          <Recommended_Crops
-            crop_name={item.crop}
+          <RecommendedFertilizer
+            fertilizer_name={item.fertilizer}
             percentage={Math.round(item.confidence)}
           />
         )}

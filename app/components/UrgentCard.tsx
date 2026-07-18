@@ -3,15 +3,15 @@ import { Link } from 'expo-router';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-interface Urgent_CardProps {
+interface UrgentCardProps {
   field: string,
   message: string,
   date: string,
 }
-export default function Urgent_Card({ field, message, date }: Urgent_CardProps) {
+export default function UrgentCard({ field, message, date }: UrgentCardProps) {
 
   return (
-    <Link href="/(tabs)/crop/profile" asChild>
+    <Link href="/(tabs)/crop/reasoning" asChild>
       <TouchableOpacity className="flex-1 flex-row border border-gray-400 border-solid rounded-lg m-1">
         <View className="p-2">
           <Ionicons name="alert-circle-outline" size={24} color="red" />

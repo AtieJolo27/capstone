@@ -90,9 +90,9 @@ export default function RootLayout() {
             <Ionicons name="leaf-outline" color={color} size={size} />
         }}
         />
-        <Tabs.Screen name="recommendations"
+        <Tabs.Screen name="fertilizer"
         options={{
-          title: "Recommendations",
+          title: "Fertilizers",
           tabBarIcon: ({color, size}) =>
             <Ionicons name="checkmark-circle-outline" color={color} size={size} />
         }}

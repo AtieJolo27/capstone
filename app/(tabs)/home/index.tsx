@@ -4,10 +4,10 @@ import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'rea
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
 import * as Progress from 'react-native-progress';
 import { supabase } from '../../../lib/supabaseClient';
-import Urgent_Card from '../../components/Urgent_Card';
+import Urgent_Card from '../../components/UrgentCard';
 
 
-const index = () => {
+export default function index(){
 
         const [modalVisible, setModalVisibility] = useState(false);
 
@@ -290,6 +290,5 @@ const index = () => {
     )
 }
 
-export default index
 
 const styles = StyleSheet.create({})

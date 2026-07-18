@@ -4,28 +4,28 @@ import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import * as Progress from 'react-native-progress';
 
-interface Recommend_CropsProps {
-    crop_name: string;
+interface BestFertilizerProps {
+    fertilizer_name: string;
     percentage: number;
 }
 
 const getStatus = (percentage: number) => {
     if (percentage >= 80) {
-        return { color: '#259406', bg: '#EAF7E9', icon: 'checkmark-circle' as const };
+        return { color: '#259406', bg: '#EAF7E9', icon: 'checkmark-circle' as const, label: 'Great match' };
     } else if (percentage > 45) {
-        return { color: '#B8A400', bg: '#FCF9E3', icon: 'alert-circle' as const };
+        return { color: '#B8A400', bg: '#FCF9E3', icon: 'alert-circle' as const, label: 'Fair match' };
     } else {
-        return { color: '#BD0909', bg: '#FBEAEA', icon: 'close-circle' as const };
+        return { color: '#BD0909', bg: '#FBEAEA', icon: 'close-circle' as const, label: 'Poor match' };
     }
 };
 
-export default function Recommended_Crops({ crop_name, percentage }: Recommend_CropsProps) {
+export default function BestFertilizer({ fertilizer_name, percentage }: BestFertilizerProps) {
     const decimal = percentage / 100;
     const status = getStatus(percentage);
 
     return (
         <Link
-            href={{ pathname: '/(tabs)/crop/profile', params: { crop: crop_name } }}
+            href={{ pathname: '/(tabs)/fertilizer/reasoning', params: { fertilizer: fertilizer_name } }}
             asChild
         >
             <TouchableOpacity
@@ -40,9 +40,13 @@ export default function Recommended_Crops({ crop_name, percentage }: Recommend_C
                 </View>
 
                 <View className="flex-1">
-                    <View className="flex-row items-center justify-between">
+                    <Text className="text-xs text-gray-600 uppercase tracking-wide">
+                        Best fertilizer for your field
+                    </Text>
+
+                    <View className="flex-row items-center justify-between mt-0.5">
                         <Text className="font-bold text-base text-gray-800 capitalize">
-                            {crop_name}
+                            {fertilizer_name}
                         </Text>
                         <Text className="font-bold text-sm" style={{ color: status.color }}>
                             {percentage}%
