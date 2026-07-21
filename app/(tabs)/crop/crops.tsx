@@ -1,7 +1,9 @@
 import BestCrop from '@/app/components/BestCrop';
 import Recommended_Crops from '@/app/components/RecommendedCrops';
+import { useThemeColors } from '@/app/lib/useThemeColors';
 import React, { useEffect, useState } from 'react';
 import { FlatList, Text, View } from 'react-native';
+import { useApp } from '@/app/lib/AppContext';
 import { supabase } from '../../../lib/supabaseClient';
 
 interface CropRecommendation {
@@ -17,6 +19,8 @@ interface CropPrediction {
 }
 
 export default function Crops() {
+  const { t } = useApp();
+  const colors = useThemeColors();
   const [crops, setCrops] = useState<CropPrediction[]>([]);
 
   useEffect(() => {
@@ -45,7 +49,6 @@ export default function Crops() {
     setCrops(data ?? []);
   }
 
-  // assuming one active reading — grab the latest row
   const latest = crops[0];
 
   const sortedRecs = [...(latest?.recommendations ?? [])]
@@ -56,7 +59,7 @@ export default function Crops() {
   const otherRecs = sortedRecs.slice(1);
 
   return (
-    <View className="p-5">
+    <View className="p-5" style={{ backgroundColor: colors.bg, flex: 1 }}>
       {latest && bestRec && (
         <BestCrop
           crop_name={latest.best_crop}
@@ -65,7 +68,9 @@ export default function Crops() {
       )}
 
       <View className="mt-4 mb-2">
-        <Text className="text-lg font-bold text-gray-600">Other Recommendations</Text>
+        <Text className="text-lg font-bold" style={{ color: colors.subText }}>
+          {t('Other Recommendations', 'Iba Pang Rekomendasyon')}
+        </Text>
       </View>
 
       <FlatList

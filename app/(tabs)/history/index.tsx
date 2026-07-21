@@ -1,13 +1,18 @@
 import NutrientHistoryChart from '@/app/components/HistoryChart'
+import SoilHealthChart from '@/app/components/SoilHealthChart'
+import { useThemeColors } from '@/app/lib/useThemeColors'
 import React from 'react'
-import { StyleSheet, View } from 'react-native'
+import { ScrollView, StyleSheet, View } from 'react-native'
 
 const index = () => {
-  return (
-    <View>
-      <NutrientHistoryChart />
+  const colors = useThemeColors()
 
-    </View>
+  return (
+    <ScrollView className="flex-1" style={{ backgroundColor: colors.bg }}>
+      <SoilHealthChart />
+      <View className="my-2 mx-4" style={{ borderTopWidth: 1, borderTopColor: colors.border }} />
+      <NutrientHistoryChart />
+    </ScrollView>
   )
 }
 

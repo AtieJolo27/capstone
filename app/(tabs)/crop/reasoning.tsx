@@ -2,6 +2,8 @@ import { supabase } from '@/lib/supabaseClient';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useApp } from '@/app/lib/AppContext';
+import { useThemeColors } from '@/app/lib/useThemeColors';
 
 interface CropRecommendation {
   crop: string;
@@ -22,19 +24,17 @@ interface CropPrediction {
 }
 
 export default function Reasoning() {
+  const { t } = useApp();
+  const colors = useThemeColors();
   const { crop } = useLocalSearchParams<{ crop: string }>();
   const [latest, setLatest] = useState<CropPrediction | null>(null);
-  
-  // AI State variables
   const [aiResponse, setAiResponse] = useState<string>('');
   const [loadingAI, setLoadingAI] = useState<boolean>(false);
 
-  // 1. Fetch latest data from Supabase on mount
   useEffect(() => {
     getLatest();
   }, []);
 
-  // 2. Automatically trigger AI when latest data or activeCrop changes
   useEffect(() => {
     const activeCrop = crop ?? latest?.best_crop;
     if (latest && activeCrop) {
@@ -57,14 +57,11 @@ export default function Reasoning() {
     setLatest(data);
   }
 
-  // 3. Automated AI call formatting nutrients directly into the prompt
   async function askGroqAutomatically(targetCrop: string, data: CropPrediction) {
     setLoadingAI(true);
-    setAiResponse(''); // Clear previous response
+    setAiResponse('');
 
-    // Structured prompt template feeding raw metrics into Groq
     const dynamicPrompt = `
-
     First, define the ${targetCrop}, its common tagalog term of filipino farmers and its purpose. Put tagalog translation of the sentence too.
 
       Explain why ${targetCrop} is suitable or the suitability of it
@@ -102,40 +99,44 @@ export default function Reasoning() {
   );
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text className="text-2xl font-bold mb-1 capitalize">
-        {activeCrop ?? 'Loading...'}
+    <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.bg }]}>
+      <Text className="text-2xl font-bold mb-1 capitalize" style={{ color: colors.text }}>
+        {activeCrop ?? t('Loading...', 'Naglo-load...')}
       </Text>
 
       {matchedRec && (
-        <Text className="text-sm text-gray-500 mb-5">
-          {matchedRec.confidence}% confidence score
+        <Text className="text-sm mb-5" style={{ color: colors.mutedText }}>
+          {matchedRec.confidence}% {t('confidence score', 'puntos ng kumpiyansa')}
         </Text>
       )}
 
-      {/* Raw Soil Metrics Card */}
       {latest && (
-        <View className="w-full bg-gray-100 rounded-xl p-4 mb-4">
-          <Text className="font-bold text-lg text-gray-700 mb-2">Current Soil Status</Text>
-          <Text className="text-sm text-gray-600">N: {latest.nitrogen} | P: {latest.phosphorus} | K: {latest.potassium} | pH: {latest.ph}</Text>
-          <Text className="text-sm text-gray-600">Temp: {latest.air_temperature}°C | Humidity: {latest.humidity}%</Text>
+        <View className="w-full rounded-xl p-4 mb-4" style={{ backgroundColor: colors.soilCardBg }}>
+          <Text className="font-bold text-lg mb-2" style={{ color: colors.text }}>
+            {t('Current Soil Status', 'Kasalukuyang Katayuan ng Lupa')}
+          </Text>
+          <Text className="text-sm" style={{ color: colors.subText }}>
+            N: {latest.nitrogen} | P: {latest.phosphorus} | K: {latest.potassium} | pH: {latest.ph}
+          </Text>
+          <Text className="text-sm" style={{ color: colors.subText }}>
+            {t('Temp', 'Temp')}: {latest.air_temperature}°C | {t('Humidity', 'Halumigmig')}: {latest.humidity}%
+          </Text>
         </View>
       )}
 
-      {/* Automated AI Reasoning Section */}
-      <View className="w-full bg-orange-50/50 border border-orange-100 rounded-xl p-4">
-        <Text className="font-bold text-lg text-orange-800 mb-2">
-          ✨ AI Suitability Analysis
+      <View className="w-full rounded-xl p-4" style={{ backgroundColor: isDark(colors) ? '#2D1F14' : '#FFF7ED', borderColor: isDark(colors) ? '#4A2D1A' : '#FFEDD5', borderWidth: 1 }}>
+        <Text className="font-bold text-lg mb-2" style={{ color: isDark(colors) ? '#FDBA74' : '#9A3412' }}>
+          ✨ {t('AI Suitability Analysis', 'Pagsusuri ng Kaangkupan ng AI')}
         </Text>
         
         {loadingAI ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator color="#f15a24" size="small" />
-            <Text style={styles.loadingText}>Analyzing soil nutrient fit...</Text>
+            <Text style={styles.loadingText}>{t('Analyzing soil nutrient fit...', 'Sinusuri ang akma ng nutrisyon ng lupa...')}</Text>
           </View>
         ) : (
-          <Text className="text-md text-gray-700 leading-relaxed">
-            {aiResponse || 'Awaiting metrics to analyze...'}
+          <Text className="text-md leading-relaxed" style={{ color: colors.subText }}>
+            {aiResponse || t('Awaiting metrics to analyze...', 'Naghihintay ng sukatan para suriin...')}
           </Text>
         )}
       </View>
@@ -143,8 +144,12 @@ export default function Reasoning() {
   );
 }
 
+function isDark(colors: ReturnType<typeof useThemeColors>) {
+  return colors.isDarkMode;
+}
+
 const styles = StyleSheet.create({
-  container: { flexGrow: 1, padding: 20, alignItems: 'center', backgroundColor: '#fff' },
+  container: { flexGrow: 1, padding: 20, alignItems: 'center' },
   loadingContainer: { flexDirection: 'row', alignItems: 'center', marginTop: 10 },
   loadingText: { marginLeft: 10, fontSize: 13, color: '#666' }
 });

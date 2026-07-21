@@ -1,6 +1,6 @@
 
 import { Ionicons } from "@expo/vector-icons";
-import { Stack } from "expo-router";
+import { router, Stack } from "expo-router";
 import { TouchableOpacity } from "react-native";
 import "../../global.css";
 
@@ -14,7 +14,7 @@ export default function HistoryLayout(){
       headerTitleStyle: { fontWeight: 'bold', fontSize: 20, color: 'white' },
       headerStyle: { backgroundColor: '#184B44' },
       headerRight: () => (
-          <TouchableOpacity onPress={() => alert('This is a button!')}>
+          <TouchableOpacity onPress={() => router.push('/profile')}>
             <Ionicons name="person-circle-outline" size={24} color="white" />
           </TouchableOpacity>
       )

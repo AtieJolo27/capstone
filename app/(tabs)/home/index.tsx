@@ -1,4 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useApp } from '@/app/lib/AppContext';
+import { useThemeColors } from '@/app/lib/useThemeColors';
 import React, { useEffect, useState } from 'react';
 import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
@@ -6,289 +8,264 @@ import * as Progress from 'react-native-progress';
 import { supabase } from '../../../lib/supabaseClient';
 import Urgent_Card from '../../components/UrgentCard';
 
+export default function index() {
+  const { t } = useApp();
+  const colors = useThemeColors();
 
-export default function index(){
+  const [modalVisible, setModalVisibility] = useState(false);
+  const [data, setData] = useState<any[]>([]);
 
-        const [modalVisible, setModalVisibility] = useState(false);
-
-        const trigger = () => {
-            setModalVisibility(!modalVisible);
+  useEffect(() => {
+    fetchData();
+    const channel = supabase
+      .channel('sensor_readings')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'sensor_readings' },
+        () => {
+          fetchData();
         }
+      )
+      .subscribe();
 
+    return () => {
+      supabase.removeChannel(channel);
+    }
+  }, []);
 
-        useEffect(() => {
-            fetchData();
-            const channel = supabase
-            .channel('sensor_readings')
-                      .on('postgres_changes',
-                        {event: '*', schema: 'public', table: 'sensor_readings'},
-                        (payload) => {
-                          console.log("Changes Detected", payload)
-                          fetchData();
-                        }
-                      )
-                      .subscribe();
-            
-                      return () => {
-                        supabase.removeChannel(channel);
-                      }
-        }, []);
+  async function fetchData() {
+    const { data: fetchedData, error } = await supabase.from('sensor_readings').select("*")
+    setData(fetchedData ?? []);
+  }
 
-        const [data, setData] = useState<any[]>([]);
-        async function fetchData(){
-            const {data: fetchedData, error} = await supabase.from('sensor_readings').select("*")
-            setData(fetchedData ?? []);
-        }
+  const getSensorValue = (field: string, defaultValue: string = '--') => {
+    if (!data || data.length === 0) return defaultValue;
+    const latestRecord = data[data.length - 1];
+    return latestRecord[field] !== undefined && latestRecord[field] !== null
+      ? String(latestRecord[field])
+      : defaultValue;
+  };
 
-    // Helper function to safely get sensor value with fallback
-    const getSensorValue = (field: string, defaultValue: string = '--') => {
-      if (!data || data.length === 0) return defaultValue;
+  const getProgressValue = (value: any, maxValue: number): number => {
+    if (value === null || value === undefined) return 0;
+    const numValue = parseFloat(String(value));
+    return isNaN(numValue) ? 0 : Math.min(numValue / maxValue, 1);
+  };
 
-      // Assuming the data array has at least one record with sensor readings
-      const latestRecord = data[data.length - 1]; // Get the most recent record
-      return latestRecord[field] !== undefined && latestRecord[field] !== null
-        ? latestRecord[field]
-        : defaultValue;
-    };
-
-    // Helper function to convert sensor value to progress percentage (0-1)
-    const getProgressValue = (value: any, maxValue: number): number => {
-      if (value === null || value === undefined) return 0;
-      const numValue = parseFloat(value);
-      return isNaN(numValue) ? 0 : Math.min(numValue / maxValue, 1);
-    };
-
-    return (
-        <ScrollView
-            className="flex-1 px-7 py-5"
-            contentContainerStyle={{ paddingBottom: 40 }}
-        >
+  return (
+    <ScrollView
+      className="flex-1 px-7 py-5"
+      contentContainerStyle={{ paddingBottom: 40 }}
+      style={{ backgroundColor: colors.bg }}
+    >
+      <View>
+        <View className="mt-4">
+          <Text className="text-lg font-bold" style={{ color: colors.subText }}>
+            {t('FIELD ZONES', 'SONA NG LARANGAN')}
+          </Text>
+        </View>
+        <View className="flex flex-row justify-between gap-2 mt-4">
+          <TouchableOpacity className="bg-green-600 w-1/3 border border-gray-600 rounded-2xl h-13 p-4">
+            <Text className="text-md font-bold text-gray-800 text-center">Zone A</Text>
+          </TouchableOpacity>
+          <TouchableOpacity className="bg-green-600 w-1/3 border border-gray-600 rounded-2xl h-13 p-4">
+            <Text className="text-md font-bold text-gray-800 text-center">Zone B</Text>
+          </TouchableOpacity>
+          <TouchableOpacity className="bg-green-600 w-1/3 border border-gray-600 rounded-2xl h-13 p-4">
+            <Text className="text-md font-bold text-gray-800 text-center">Zone C</Text>
+          </TouchableOpacity>
+        </View>
+        <View className="my-2">
+          <Text className="text-md font-bold mt-4" style={{ color: colors.subText }}>
+            {t('Zone A - Rice Field', 'Sona A - Palayan')}
+          </Text>
+        </View>
+        <View className="my-2">
+          <Text className="text-lg font-bold" style={{ color: colors.subText }}>
+            {t('SOIL HEALTH SCORE', 'ISKOR NG KALUSUGAN NG LUPA')}
+          </Text>
+        </View>
+        <View className="border rounded-2xl h-13 p-4" style={{ borderColor: colors.border, backgroundColor: colors.cardBg }}>
+          <View>
+            <TouchableOpacity onPress={() => setModalVisibility(true)}>
+              <Ionicons name="alert-circle-outline" size={24} color={colors.text} />
+            </TouchableOpacity>
+          </View>
+          <View className="flex flex-row justify-between gap-2 mt-2">
             <View>
-                <View className="mt-4">
-                    <Text className="text-lg font-bold color-gray-600">FIELD ZONES</Text>
-                </View>
-                <View className="flex flex-row justify-between gap-2 mt-4 ">
-                    <TouchableOpacity className="bg-green-600 w-1/3 border border-gray-600 rounded-2xl h-13 p-4">
-                        <Text className="text-md font-bold color-gray-800 text-center al ign-center">Zone A</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity className="bg-green-600 w-1/3 border border-gray-600 rounded-2xl h-13 p-4">
-                        <Text className="text-md font-bold color-gray-800 text-center">Zone B</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity className="bg-green-600 w-1/3 border border-gray-600 rounded-2xl h-13 p-4">
-                        <Text className="text-md font-bold color-gray-800 text-center">Zone C</Text>
-                    </TouchableOpacity>
-                </View>
-                <View className="my-2">
-                    <Text className="text-md font-bold color-gray-600 mt-4">Zone A - Rice Field</Text>
-                </View>
-                <View className="my-2">
-                    <Text className="text-lg font-bold color-gray-600">SOIL HEALTH SCORE</Text>
-                </View>
-                <View className="border border-gray-600 rounded-2xl h-13 p-4">
-                    <View>
-                        <TouchableOpacity onPress={() => setModalVisibility(true)}>
-                            <Ionicons name="alert-circle-outline" size={24} color="black" />
-                        </TouchableOpacity>
-                    </View>
-                    <View className="flex flex-row justify-between gap-2 mt-2">
-                        <View>
-                            <AnimatedCircularProgress
-                                size={70}
-                                width={4}
-                                fill={89}
-                                tintColor="#008000"
-                                onAnimationComplete={() => console.log('onAnimationComplete')}
-                                backgroundColor="#738f52"
-                            >
-                                {percentage => (
-                                    <Text className="text-2xl font-bold color-gray-600 text-center">{percentage}%</Text>
-                                )}
-                            </AnimatedCircularProgress>
-
-                        </View>
-                        <View className="flex flex-row gap-5- justify-between">
-                            <View className="flex flex-col justify-start gap-2">
-                                <Text className="text-md font-bold color-gray-600">Soil Type:</Text>
-                                <Text className="text-md font-bold color-gray-600">Organic Matter:</Text>
-                                <Text className="text-md font-bold color-gray-600">Texture:</Text>
-                                <Text className="text-md font-bold color-gray-600">Status:</Text>
-                            </View>
-                            <View className="flex flex-col justify-start gap-2">
-                                <Text className="text-md font-bold color-gray-600 text-center"> Good</Text>
-                                <Text className="text-md font-bold color-gray-600 text-center">3.2</Text>
-                                <Text className="text-md font-bold color-gray-600 text-center">Medium</Text>
-                                <Text className="text-md font-bold color-gray-600 text-center">Ready for Planting</Text>
-                            </View>
-                        </View>
-                    </View>
-                </View>
-                <View className="my-2">
-                    <Text className="text-lg font-bold color-gray-600">LIVE SENSOR READINGS</Text>
-                </View>
-                <View className="flex flex-row gap-2 py-2">
-                    <View className=" bg-green-100 border border-gray-400 rounded-2xl p-3">
-                        <View className="flex flex-col align-center justify-center">
-                            <Ionicons name="water-outline" size={17} />
-                            <Text className="text-sm">Soil Moisture</Text>
-                        </View>
-                        <View className="py-1">
-                            <Text className="text-xl font-bold text-gray-600 text-start">
-                              {getSensorValue('soil_moisture', '--')}%
-                            </Text>
-                        </View>
-                        <View className="">
-                            <Text className="text-sm font-bold text-gray-500 text-start">Opt: 70-75%</Text>
-                            <Progress.Bar
-                              progress={getProgressValue(getSensorValue('soil_moisture', 0), 100)}
-                              height={5}
-                              color="rgba(0, 128, 0, 1)"
-                              unfilledColor="rgba(214, 228, 214, 0.8)"
-                              borderWidth={0}
-                              width={75}
-                            />
-                        </View>
-
-                    </View>
-                    <View className=" bg-green-100 border border-gray-400 rounded-2xl p-3">
-                        <View className="flex flex-column align-center justify-center">
-                            <Ionicons name="thermometer-outline" size={17} />
-                            <Text className="text-sm">Soil Temperature</Text>
-                        </View>
-                        <View className="py-1">
-                            <Text className="text-xl font-bold text-gray-600 text-start">
-                              {getSensorValue('soil_temperature', '--')}°C
-                            </Text>
-                        </View>
-                        <View className="">
-                            <Text className="text-sm font-bold text-gray-500 text-start">Opt: 20-30°C</Text>
-                            <Progress.Bar
-                              progress={getProgressValue(getSensorValue('soil_temperature', 0), 50)}
-                              height={5}
-                              color="rgba(0, 128, 0, 1)"
-                              unfilledColor="rgba(214, 228, 214, 0.8)"
-                              borderWidth={0}
-                              width={75}
-                            />
-                        </View>
-
-                    </View>
-                    <View className=" bg-green-100 border border-gray-400 rounded-2xl p-3">
-                        <View className="flex flex-column align-center justify-center">
-                            <Ionicons name="analytics-outline" size={17} />
-                            <Text className="text-sm">Soil pH Level</Text>
-                        </View>
-                        <View className="py-1">
-                            <Text className="text-xl font-bold text-gray-600 text-start">
-                              {getSensorValue('ph', '--')}
-                            </Text>
-                        </View> 
-                        <View className="">
-                            <Text className="text-sm font-bold text-gray-500 text-start">Opt: 6.0-7.5</Text>
-                            <Progress.Bar
-                              progress={getProgressValue(getSensorValue('ph', 0), 14)}
-                              height={5}
-                              color="rgba(0, 128, 0, 1)"
-                              unfilledColor="rgba(214, 228, 214, 0.8)"
-                              borderWidth={0}
-                              width={75}
-                            />
-                        </View>
-
-                    </View>
-
-                </View>
-                <View className="flex flex-row gap-2 py-2">
-                    <View className=" bg-green-100 border border-gray-400 rounded-2xl p-3">
-                        <View className="flex flex-col align-center justify-center">
-                            <Ionicons name="flash-outline" size={17} />
-                            <Text className="text-sm">Nitrogen</Text>
-                        </View>
-                        <View className="py-1">
-                            <Text className="text-xl font-bold text-gray-600 text-start">
-                              {getSensorValue('nitrogen', '--')} ppm
-                            </Text>
-                        </View>
-                        <View className="">
-                            <Text className="text-sm font-bold text-gray-500 text-start">Opt: 20-40 ppm</Text>
-                            <Progress.Bar
-                              progress={getProgressValue(getSensorValue('nitrogen', 0), 100)}
-                              height={5}
-                              color="rgba(0, 128, 0, 1)"
-                              unfilledColor="rgba(214, 228, 214, 0.8)"
-                              borderWidth={0}
-                              width={75}
-                            />
-                        </View>
-
-                    </View>
-                    <View className=" bg-green-100 border border-gray-400 rounded-2xl p-3">
-                        <View className="flex flex-col align-center justify-center">
-                            <Ionicons name="flower-outline" size={17} />
-                            <Text className="text-sm">Phosphorus</Text>
-                        </View>
-                        <View className="py-1">
-                            <Text className="text-xl font-bold text-gray-600 text-start">
-                              {getSensorValue('phosphorus', '--')} ppm
-                            </Text>
-                        </View>
-                        <View className="py-">
-                            <Text className="text-sm font-bold text-gray-500 text-start">Opt: 10-30 ppm</Text>
-                            <Progress.Bar
-                              progress={getProgressValue(getSensorValue('phosphorus', 0), 100)}
-                              height={5}
-                              color="rgba(0, 128, 0, 1)"
-                              unfilledColor="rgba(214, 228, 214, 0.8)"
-                              borderWidth={0}
-                              width={75}
-                            />
-                        </View>
-
-                    </View>
-                    <View className=" bg-green-100 border border-gray-400 rounded-2xl p-3">
-                        <View className="flex flex-col align-center justify-center">
-                            <Ionicons name="medical-outline" size={17} />
-                            <Text className="text-sm">Potassium</Text>
-                        </View>
-                        <View className="py-1">
-                            <Text className="text-xl font-bold text-gray-600 text-start">
-                              {getSensorValue('potassium', '--')} ppm
-                            </Text>
-                        </View>
-                        <View className="">
-                            <Text className="text-sm font-bold text-gray-500 text-start">Opt: 100-200 ppm</Text>
-                            <Progress.Bar
-                              progress={getProgressValue(getSensorValue('potassium', 0), 300)}
-                              height={5}
-                              color="rgba(0, 128, 0, 1)"
-                              unfilledColor="rgba(214, 228, 214, 0.8)"
-                              borderWidth={0}
-                              width={75}
-                            />
-                        </View>
-
-                    </View>
-
-                </View>
+              <AnimatedCircularProgress
+                size={70}
+                width={4}
+                fill={89}
+                tintColor="#008000"
+                onAnimationComplete={() => console.log('onAnimationComplete')}
+                backgroundColor="#738f52"
+              >
+                {(percentage: number) => (
+                  <Text className="text-2xl font-bold text-center" style={{ color: colors.text }}>
+                    {Math.round(percentage)}%
+                  </Text>
+                )}
+              </AnimatedCircularProgress>
             </View>
-            <View>
-                <View className="my-2">
-                    <Text className="text-lg font-bold color-gray-600">URGENT NOTIFICATIONS</Text>
-                </View>
-                <Urgent_Card field="Soil Temperature" message="Temperature too high, it's 90 degrees" date="2 days ago" />
-                <Urgent_Card field="Soil Temperature" message="Temperature too high, it's 90 degrees" date="2 days ago" />
-            </View>
-
-            <Modal className="flex-1 p-2 flex-column" visible={modalVisible}>
-                <TouchableOpacity onPress={()=> setModalVisibility(false)   }>
-                    <Ionicons name="close-circle-outline" size={24} color="black" />
-                </TouchableOpacity>
-                <Text>
-                    Hello
+            <View className="flex flex-row gap-5 justify-between">
+              <View className="flex flex-col justify-start gap-2">
+                <Text className="text-md font-bold" style={{ color: colors.text }}>
+                  {t('Soil Type:', 'Uri ng Lupa:')}
                 </Text>
-            </Modal>
-        </ScrollView>
-    )
+                <Text className="text-md font-bold" style={{ color: colors.text }}>
+                  {t('Organic Matter:', 'Organikong Bagay:')}
+                </Text>
+                <Text className="text-md font-bold" style={{ color: colors.text }}>
+                  {t('Texture:', 'Tekstura:')}
+                </Text>
+                <Text className="text-md font-bold" style={{ color: colors.text }}>
+                  {t('Status:', 'Katayuan:')}
+                </Text>
+              </View>
+              <View className="flex flex-col justify-start gap-2">
+                <Text className="text-md font-bold text-center" style={{ color: colors.subText }}>
+                  {t('Good', 'Mabuti')}
+                </Text>
+                <Text className="text-md font-bold text-center" style={{ color: colors.subText }}>3.2</Text>
+                <Text className="text-md font-bold text-center" style={{ color: colors.subText }}>
+                  {t('Medium', 'Katamtaman')}
+                </Text>
+                <Text className="text-md font-bold text-center" style={{ color: colors.subText }}>
+                  {t('Ready for Planting', 'Handa na sa Pagtatanim')}
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+        <View className="my-2">
+          <Text className="text-lg font-bold" style={{ color: colors.subText }}>
+            {t('LIVE SENSOR READINGS', 'BASA NG SENSOR')}
+          </Text>
+        </View>
+        <View className="flex flex-row gap-2 py-2">
+          <SensorCard
+            colors={colors}
+            icon="water-outline"
+            label={t('Soil Moisture', 'Halumigmig ng Lupa')}
+            value={`${getSensorValue('soil_moisture', '--')}%`}
+            opt="70-75%"
+            progress={getProgressValue(getSensorValue('soil_moisture', '0'), 100)}
+          />
+          <SensorCard
+            colors={colors}
+            icon="thermometer-outline"
+            label={t('Soil Temperature', 'Temperatura ng Lupa')}
+            value={`${getSensorValue('soil_temperature', '--')}°C`}
+            opt="20-30°C"
+            progress={getProgressValue(getSensorValue('soil_temperature', '0'), 50)}
+          />
+          <SensorCard
+            colors={colors}
+            icon="analytics-outline"
+            label={t('Soil pH', 'Antas ng pH')}
+            value={`${getSensorValue('ph', '--')}`}
+            opt="6.0-7.5"
+            progress={getProgressValue(getSensorValue('ph', '0'), 14)}
+          />
+        </View>
+        <View className="flex flex-row gap-2 py-2">
+          <SensorCard
+            colors={colors}
+            icon="flash-outline"
+            label={t('Nitrogen', 'Nitrogen')}
+            value={`${getSensorValue('nitrogen', '--')} ppm`}
+            opt="20-40 ppm"
+            progress={getProgressValue(getSensorValue('nitrogen', '0'), 100)}
+          />
+          <SensorCard
+            colors={colors}
+            icon="flower-outline"
+            label={t('Phosphorus', 'Phosphorus')}
+            value={`${getSensorValue('phosphorus', '--')} ppm`}
+            opt="10-30 ppm"
+            progress={getProgressValue(getSensorValue('phosphorus', '0'), 100)}
+          />
+          <SensorCard
+            colors={colors}
+            icon="medical-outline"
+            label={t('Potassium', 'Potassium')}
+            value={`${getSensorValue('potassium', '--')} ppm`}
+            opt="100-200 ppm"
+            progress={getProgressValue(getSensorValue('potassium', '0'), 300)}
+          />
+        </View>
+      </View>
+      <View>
+        <View className="my-2">
+          <Text className="text-lg font-bold" style={{ color: colors.subText }}>
+            {t('URGENT NOTIFICATIONS', 'APURADONG NOTIFIKASYON')}
+          </Text>
+        </View>
+        <Urgent_Card
+          field={t('Soil Temperature', 'Temperatura ng Lupa')}
+          message={t("Temperature too high, it's 90 degrees", "Masyadong mataas ang temperatura, 90 degrees")}
+          date={t('2 days ago', '2 araw ang nakalipas')}
+        />
+        <Urgent_Card
+          field={t('Soil Moisture', 'Halumigmig ng Lupa')}
+          message={t("Moisture level too low", "Masyadong mababa ang antas ng kahalumigmigan")}
+          date={t('1 day ago', '1 araw ang nakalipas')}
+        />
+      </View>
+
+      <Modal visible={modalVisible} transparent animationType="fade">
+        <View style={{ backgroundColor: 'rgba(0,0,0,0.5)', flex: 1, padding: 20, justifyContent: 'center' }}>
+          <View style={{ backgroundColor: colors.cardBg, borderRadius: 16, padding: 24 }}>
+            <TouchableOpacity onPress={() => setModalVisibility(false)} style={{ alignSelf: 'flex-end' }}>
+              <Ionicons name="close-circle-outline" size={28} color={colors.text} />
+            </TouchableOpacity>
+            <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginTop: 12 }}>
+              {t('Soil Health Details', 'Detalye ng Kalusugan ng Lupa')}
+            </Text>
+            <Text style={{ color: colors.subText, fontSize: 14, marginTop: 8 }}>
+              {t('Your soil is in good condition. Continue monitoring regularly.', 'Ang iyong lupa ay nasa mabuting kondisyon. Patuloy na subaybayan nang regular.')}
+            </Text>
+          </View>
+        </View>
+      </Modal>
+    </ScrollView>
+  )
 }
 
+function SensorCard({ colors, icon, label, value, opt, progress }: {
+  colors: ReturnType<typeof useThemeColors>;
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  label: string;
+  value: string;
+  opt: string;
+  progress: number;
+}) {
+  return (
+    <View className="border rounded-2xl p-3 flex-1" style={{ backgroundColor: colors.sensorCardBg, borderColor: colors.sensorCardBorder }}>
+      <View className="flex flex-col items-center justify-center">
+        <Ionicons name={icon} size={17} color={colors.text} />
+        <Text className="text-sm" style={{ color: colors.text }}>{label}</Text>
+      </View>
+      <View className="py-1">
+        <Text className="text-xl font-bold text-start" style={{ color: colors.text }}>
+          {value}
+        </Text>
+      </View>
+      <View>
+        <Text className="text-sm font-bold text-start" style={{ color: colors.mutedText }}>
+          Opt: {opt}
+        </Text>
+        <Progress.Bar
+          progress={progress}
+          height={5}
+          color="rgba(0, 128, 0, 1)"
+          unfilledColor="rgba(214, 228, 214, 0.8)"
+          borderWidth={0}
+          width={75}
+        />
+      </View>
+    </View>
+  );
+}
 
 const styles = StyleSheet.create({})

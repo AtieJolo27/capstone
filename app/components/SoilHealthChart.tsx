@@ -6,41 +6,43 @@ import { Dimensions, ScrollView, Text, TouchableOpacity, View } from 'react-nati
 import { LineChart } from 'react-native-chart-kit';
 import { Svg, Rect, Text as SvgText } from 'react-native-svg';
 
-type Metric = {
-  key: keyof SoilHistoryRow;
-  label: string;
-  labelTl: string;
-  unit: string;
-  color: string;
-};
-
-const METRICS: Metric[] = [
-  { key: 'nitrogen', label: 'Nitrogen', labelTl: 'Nitrogen', unit: 'mg/kg', color: '#2563EB' },
-  { key: 'phosphorus', label: 'Phosphorus', labelTl: 'Phosphorus', unit: 'mg/kg', color: '#7C3AED' },
-  { key: 'potassium', label: 'Potassium', labelTl: 'Potassium', unit: 'mg/kg', color: '#DB2777' },
-  { key: 'ph', label: 'Soil pH', labelTl: 'Antas ng pH', unit: '', color: '#059669' },
-  { key: 'air_temperature', label: 'Air Temp', labelTl: 'Temp ng Hangin', unit: '°C', color: '#EA580C' },
-  { key: 'soil_temperature', label: 'Soil Temp', labelTl: 'Temp ng Lupa', unit: '°C', color: '#D97706' },
-  { key: 'humidity', label: 'Humidity', labelTl: 'Halumigmig', unit: '%', color: '#0891B2' },
-  { key: 'soil_moisture', label: 'Soil Moisture', labelTl: 'Halumigmig ng Lupa', unit: '%', color: '#16A34A' },
-];
-
 const screenWidth = Dimensions.get('window').width;
 
 type TooltipInfo = {
   x: number;
   y: number;
   value: number;
-  unit: string;
   label: string;
   date: string;
 } | null;
 
-export default function NutrientHistoryChart() {
-  const { t, language } = useApp();
+function computeHealthScore(row: SoilHistoryRow): number {
+  const moistureScore = Math.max(0, 100 - Math.abs((row.soil_moisture ?? 70) - 72.5) * 3.5);
+  const tempScore = Math.max(0, 100 - Math.abs((row.soil_temperature ?? 25) - 25) * 8);
+  const phScore = (row.ph >= 6.0 && row.ph <= 7.5)
+    ? 100
+    : Math.max(0, 100 - Math.abs(row.ph - 6.75) * 40);
+  const humidityScore = Math.max(0, 100 - Math.abs((row.humidity ?? 70) - 70) * 2.5);
+  const overall = (moistureScore * 0.30 + tempScore * 0.25 + phScore * 0.25 + humidityScore * 0.20);
+  return Math.round(Math.max(0, Math.min(100, overall)));
+}
+
+function getHealthColor(score: number): string {
+  if (score >= 75) return '#16A34A';
+  if (score >= 50) return '#EAB308';
+  return '#DC2626';
+}
+
+function getHealthLabel(score: number): string {
+  if (score >= 75) return 'Excellent';
+  if (score >= 50) return 'Fair';
+  return 'Poor';
+}
+
+export default function SoilHealthChart() {
+  const { t, isDarkMode } = useApp();
   const colors = useThemeColors();
   const [history, setHistory] = useState<SoilHistoryRow[]>([]);
-  const [selected, setSelected] = useState<Metric>(METRICS[0]);
   const [loading, setLoading] = useState(true);
   const [tooltip, setTooltip] = useState<TooltipInfo>(null);
 
@@ -55,7 +57,7 @@ export default function NutrientHistoryChart() {
   if (loading) {
     return (
       <View className="p-5">
-        <Text style={{ color: colors.mutedText }}>{t('Loading history...', 'Naglo-load ng kasaysayan...')}</Text>
+        <Text style={{ color: colors.mutedText }}>{t('Loading health history...', 'Naglo-load ng kasaysayan ng kalusugan...')}</Text>
       </View>
     );
   }
@@ -68,7 +70,9 @@ export default function NutrientHistoryChart() {
     );
   }
 
-  const values = history.map((row) => Number(row[selected.key]));
+  const healthScores = history.map((row) => computeHealthScore(row));
+  const latestScore = healthScores[healthScores.length - 1];
+
   const labelStep = Math.max(1, Math.ceil(history.length / 6));
   const labels = history.map((row, i) =>
     i % labelStep === 0
@@ -90,60 +94,65 @@ export default function NutrientHistoryChart() {
       x: data.x,
       y: data.y,
       value: data.value,
-      unit: selected.unit,
-      label: language === 'tagalog' ? selected.labelTl : selected.label,
+      label: getHealthLabel(data.value),
       date: dateStr,
     });
   };
 
   return (
     <View className="p-3">
-      <Text className="font-bold text-lg mb-2" style={{ color: colors.text }}>
-        {t('Nutrient & Soil History', 'Kasaysayan ng Nutrisyon at Lupa')}
-      </Text>
+      <View className="flex-row items-center justify-between mb-3">
+        <Text className="font-bold text-lg" style={{ color: colors.text }}>
+          {t('Soil Health Score', 'Iskor ng Kalusugan ng Lupa')}
+        </Text>
+        <View className="flex-row items-center">
+          <View
+            className="w-3 h-3 rounded-full mr-1.5"
+            style={{ backgroundColor: getHealthColor(latestScore) }}
+          />
+          <Text className="font-bold text-sm" style={{ color: getHealthColor(latestScore) }}>
+            {latestScore}% - {t(getHealthLabel(latestScore), getHealthLabel(latestScore))}
+          </Text>
+        </View>
+      </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-3">
-        {METRICS.map((metric) => (
-          <TouchableOpacity
-            key={metric.key}
-            onPress={() => {
-              setSelected(metric);
-              setTooltip(null);
-            }}
-            className="mr-2 px-3 py-1.5 rounded-full"
-            style={{
-              backgroundColor: selected.key === metric.key ? metric.color : (colors.isDarkMode ? '#374151' : '#F3F4F6'),
-            }}
-          >
-            <Text
-              className="text-xs font-semibold"
-              style={{ color: selected.key === metric.key ? 'white' : (colors.isDarkMode ? '#D1D5DB' : '#6B7280') }}
-            >
-              {language === 'tagalog' ? metric.labelTl : metric.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      <View className="flex-row justify-center mb-3 space-x-4">
+        <View className="flex-row items-center">
+          <View className="w-2.5 h-2.5 rounded-full mr-1" style={{ backgroundColor: '#16A34A' }} />
+          <Text style={{ color: colors.mutedText }} className="text-xs">{t('Excellent', 'Napakahusay')} (≥75)</Text>
+        </View>
+        <View className="flex-row items-center">
+          <View className="w-2.5 h-2.5 rounded-full mr-1" style={{ backgroundColor: '#EAB308' }} />
+          <Text style={{ color: colors.mutedText }} className="text-xs">{t('Fair', 'Katamtaman')} (50-74)</Text>
+        </View>
+        <View className="flex-row items-center">
+          <View className="w-2.5 h-2.5 rounded-full mr-1" style={{ backgroundColor: '#DC2626' }} />
+          <Text style={{ color: colors.mutedText }} className="text-xs">{t('Poor', 'Mahina')} ({'<'}50)</Text>
+        </View>
+      </View>
 
       <View>
         <LineChart
           data={{
             labels,
-            datasets: [{ data: values }],
+            datasets: [{ data: healthScores }],
           }}
           width={screenWidth - 40}
           height={220}
-          yAxisSuffix={selected.unit}
+          yAxisSuffix="%"
+          yAxisInterval={1}
+          fromZero={true}
           onDataPointClick={handleDataPointClick}
           chartConfig={{
             backgroundColor: colors.chartBg,
             backgroundGradientFrom: colors.chartBg,
             backgroundGradientTo: colors.chartBg,
-            decimalPlaces: 1,
-            color: (opacity = 1) => selected.color,
+            decimalPlaces: 0,
+            color: (opacity = 1) => isDarkMode ? `rgba(74, 222, 128, ${opacity})` : `rgba(22, 163, 74, ${opacity})`,
             labelColor: () => colors.chartLabel,
-            propsForDots: { r: '3', strokeWidth: '1', stroke: selected.color },
+            propsForDots: { r: '4', strokeWidth: '2', stroke: isDarkMode ? '#4ADE80' : '#16A34A' },
             propsForBackgroundLines: { strokeDasharray: '4', stroke: colors.chartGrid },
+            propsForVerticalLabels: { fontSize: 10 },
           }}
           bezier
           style={{ borderRadius: 16 }}
@@ -166,7 +175,7 @@ export default function NutrientHistoryChart() {
               height={42}
               rx={8}
               ry={8}
-              fill={selected.color}
+              fill={getHealthColor(tooltip.value)}
               opacity={0.95}
             />
             <SvgText
@@ -177,7 +186,7 @@ export default function NutrientHistoryChart() {
               fontWeight="bold"
               textAnchor="middle"
             >
-              {tooltip.value}{tooltip.unit}
+              {tooltip.value}%
             </SvgText>
             <SvgText
               x={tooltip.x}
@@ -203,10 +212,10 @@ export default function NutrientHistoryChart() {
 
       <TouchableOpacity
         onPress={() => setTooltip(null)}
-        className="mt-2 self-center"
+        className="mt-1 self-center"
       >
         <Text className="text-xs" style={{ color: colors.mutedText }}>
-          {tooltip ? t('Tap to dismiss', 'I-tap para alisin') : `${t('Last', 'Huling')} ${history.length} ${t('readings', 'pagbasa')}`}
+          {tooltip ? t('Tap to dismiss', 'I-tap para alisin') : `${t('Last', 'Huling')} ${healthScores.length} ${t('readings', 'pagbasa')}`}
         </Text>
       </TouchableOpacity>
     </View>
