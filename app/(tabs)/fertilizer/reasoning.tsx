@@ -21,7 +21,7 @@ interface SoilData {
 }
 
 export default function Reasoning() {
-  const { t } = useApp();
+  const { t, language } = useApp();
   const colors = useThemeColors();
   const { fertilizer } = useLocalSearchParams<{ fertilizer: string }>();
 
@@ -37,7 +37,7 @@ export default function Reasoning() {
     if (soilData && fertilizer) {
       askGroqAutomatically(fertilizer, soilData);
     }
-  }, [soilData, fertilizer]);
+  }, [soilData, fertilizer, language]);
 
   async function getLatestSoil() {
     const { data, error } = await supabase
@@ -59,8 +59,12 @@ export default function Reasoning() {
     setLoadingAI(true);
     setAiResponse('');
 
+    const responseLanguage = language === 'tagalog'
+      ? `Respond entirely in Tagalog (Filipino). Use Filipino farming terms where appropriate.`
+      : `Respond entirely in English.`;
+
     const dynamicPrompt = `
-First, define the ${targetFertilizer} and its purpose. Put tagalog translation too.
+First, define what ${targetFertilizer} is and its purpose for farming.
 
       Explain why ${targetFertilizer} is suitable or the suitability of it
        for a soil with the following environmental metrics:
@@ -71,7 +75,9 @@ First, define the ${targetFertilizer} and its purpose. Put tagalog translation t
       - Air Temperature: ${data.air_temperature}°C
       - Humidity: ${data.humidity}%
       
-      Keep the explanation clear, actionable, concise, and focused on why these specific values match the plant's needs. Don't add so much design and formatting, just bullet it. Make it concise so that farmers can quickly understand the suitability of this fertilizer for their soil. Also add tagalog translation of the explanation in  after each english explanation in this format (Sa tagalog). Separate it with a line break and parentheses. Don't change the terms that have no tagalog translation such as phosphorus, nitrogen, potassium, pH
+      Keep the explanation clear, actionable, concise, and focused on why these specific values match the plant's needs. Don't add so much design and formatting, just bullet it. Make it concise so that farmers can quickly understand the suitability of this fertilizer for their soil.
+      
+      CRITICAL: ${responseLanguage} Do NOT provide bilingual or dual-language responses. Use ONLY the specified language. Don't change terms that have no direct translation such as phosphorus, nitrogen, potassium, pH.
     `;
 
     try {
