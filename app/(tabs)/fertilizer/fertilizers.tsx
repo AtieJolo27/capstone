@@ -1,5 +1,7 @@
 import BestFertilizer from '@/app/components/BestFertilizer';
 import RecommendedFertilizer from '@/app/components/RecommendedFertilizer';
+import { useApp } from '@/app/lib/AppContext';
+import { useThemeColors } from '@/app/lib/useThemeColors';
 import React, { useEffect, useState } from 'react';
 import { FlatList, Text, View } from 'react-native';
 import { supabase } from '../../../lib/supabaseClient';
@@ -17,6 +19,8 @@ interface FertilizerPrediction {
 }
 
 export default function Fertilizers() {
+  const { t } = useApp();
+  const colors = useThemeColors();
   const [fertilizers, setFertilizers] = useState<FertilizerPrediction[]>([]);
 
   useEffect(() => {
@@ -45,7 +49,6 @@ export default function Fertilizers() {
     setFertilizers(data ?? []);
   }
 
-  // assuming one active reading — grab the latest row
   const latest = fertilizers[0];
 
   const sortedRecs = [...(latest?.recommendations ?? [])]
@@ -56,7 +59,7 @@ export default function Fertilizers() {
   const otherRecs = sortedRecs.slice(1);
 
   return (
-    <View className="p-5">
+    <View className="p-5" style={{ backgroundColor: colors.bg, flex: 1 }}>
       {latest && bestRec && (
         <BestFertilizer
           fertilizer_name={latest.best_fertilizer}
@@ -65,7 +68,9 @@ export default function Fertilizers() {
       )}
 
       <View className="mt-4 mb-2">
-        <Text className="text-lg font-bold text-gray-600">Other Recommendations</Text>
+        <Text className="text-lg font-bold" style={{ color: colors.subText }}>
+          {t('Other Recommendations', 'Iba Pang Rekomendasyon')}
+        </Text>
       </View>
 
       <FlatList

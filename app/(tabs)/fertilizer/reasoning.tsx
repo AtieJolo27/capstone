@@ -8,6 +8,8 @@ import {
     Text,
     View,
 } from 'react-native';
+import { useApp } from '@/app/lib/AppContext';
+import { useThemeColors } from '@/app/lib/useThemeColors';
 
 interface SoilData {
   nitrogen: number;
@@ -19,10 +21,11 @@ interface SoilData {
 }
 
 export default function Reasoning() {
+  const { t } = useApp();
+  const colors = useThemeColors();
   const { fertilizer } = useLocalSearchParams<{ fertilizer: string }>();
 
   const [soilData, setSoilData] = useState<SoilData | null>(null);
-
   const [aiResponse, setAiResponse] = useState('');
   const [loadingAI, setLoadingAI] = useState(false);
 
@@ -39,9 +42,7 @@ export default function Reasoning() {
   async function getLatestSoil() {
     const { data, error } = await supabase
       .from('crop_predictions')
-      .select(
-        'nitrogen, phosphorus, potassium, ph, air_temperature, humidity'
-      )
+      .select('nitrogen, phosphorus, potassium, ph, air_temperature, humidity')
       .order('created_at', { ascending: false })
       .limit(1)
       .single();
@@ -54,17 +55,12 @@ export default function Reasoning() {
     setSoilData(data);
   }
 
-  async function askGroqAutomatically(
-    targetFertilizer: string,
-    data: SoilData
-  ) {
+  async function askGroqAutomatically(targetFertilizer: string, data: SoilData) {
     setLoadingAI(true);
     setAiResponse('');
 
     const dynamicPrompt = `
 First, define the ${targetFertilizer} and its purpose. Put tagalog translation too.
-
-
 
       Explain why ${targetFertilizer} is suitable or the suitability of it
        for a soil with the following environmental metrics:
@@ -75,23 +71,17 @@ First, define the ${targetFertilizer} and its purpose. Put tagalog translation t
       - Air Temperature: ${data.air_temperature}°C
       - Humidity: ${data.humidity}%
       
-      
       Keep the explanation clear, actionable, concise, and focused on why these specific values match the plant's needs. Don't add so much design and formatting, just bullet it. Make it concise so that farmers can quickly understand the suitability of this fertilizer for their soil. Also add tagalog translation of the explanation in  after each english explanation in this format (Sa tagalog). Separate it with a line break and parentheses. Don't change the terms that have no tagalog translation such as phosphorus, nitrogen, potassium, pH
     `;
 
     try {
       const res = await fetch('/api/groq', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          prompt: dynamicPrompt,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: dynamicPrompt }),
       });
 
       const json = await res.json();
-
       setAiResponse(json.data || json.error || 'No explanation returned.');
     } catch (err) {
       console.log(err);
@@ -102,44 +92,42 @@ First, define the ${targetFertilizer} and its purpose. Put tagalog translation t
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text className="text-2xl font-bold mb-5 capitalize">
+    <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.bg }]}>
+      <Text className="text-2xl font-bold mb-5 capitalize" style={{ color: colors.text }}>
         {fertilizer}
       </Text>
 
       {soilData && (
-        <View className="w-full bg-gray-100 rounded-xl p-4 mb-4">
-          <Text className="font-bold text-lg text-gray-700 mb-2">
-            Current Soil Status
+        <View className="w-full rounded-xl p-4 mb-4" style={{ backgroundColor: colors.soilCardBg }}>
+          <Text className="font-bold text-lg mb-2" style={{ color: colors.text }}>
+            {t('Current Soil Status', 'Kasalukuyang Katayuan ng Lupa')}
           </Text>
 
-          <Text className="text-sm text-gray-600">
-            N: {soilData.nitrogen} | P: {soilData.phosphorus} | K:{' '}
-            {soilData.potassium} | pH: {soilData.ph}
+          <Text className="text-sm" style={{ color: colors.subText }}>
+            N: {soilData.nitrogen} | P: {soilData.phosphorus} | K: {soilData.potassium} | pH: {soilData.ph}
           </Text>
 
-          <Text className="text-sm text-gray-600">
-            Temp: {soilData.air_temperature}°C | Humidity:{' '}
-            {soilData.humidity}%
+          <Text className="text-sm" style={{ color: colors.subText }}>
+            {t('Temp', 'Temp')}: {soilData.air_temperature}°C | {t('Humidity', 'Halumigmig')}: {soilData.humidity}%
           </Text>
         </View>
       )}
 
-      <View className="w-full bg-orange-50 border border-orange-100 rounded-xl p-4">
-        <Text className="font-bold text-lg text-orange-800 mb-2">
-          ✨ AI Suitability Analysis
+      <View className="w-full rounded-xl p-4" style={{ backgroundColor: colors.isDarkMode ? '#2D1F14' : '#FFF7ED', borderColor: colors.isDarkMode ? '#4A2D1A' : '#FFEDD5', borderWidth: 1 }}>
+        <Text className="font-bold text-lg mb-2" style={{ color: colors.isDarkMode ? '#FDBA74' : '#9A3412' }}>
+          ✨ {t('AI Suitability Analysis', 'Pagsusuri ng Kaangkupan ng AI')}
         </Text>
 
         {loadingAI ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator color="#f15a24" />
-            <Text style={styles.loadingText}>
-              Analyzing soil nutrient fit...
+            <Text style={[styles.loadingText, { color: colors.mutedText }]}>
+              {t('Analyzing soil nutrient fit...', 'Sinusuri ang akma ng nutrisyon ng lupa...')}
             </Text>
           </View>
         ) : (
-          <Text className="text-base text-gray-700">
-            {aiResponse || 'Awaiting metrics to analyze...'}
+          <Text className="text-base leading-relaxed" style={{ color: colors.subText }}>
+            {aiResponse || t('Awaiting metrics to analyze...', 'Naghihintay ng sukatan para suriin...')}
           </Text>
         )}
       </View>
@@ -148,22 +136,7 @@ First, define the ${targetFertilizer} and its purpose. Put tagalog translation t
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    padding: 20,
-    alignItems: 'center',
-    backgroundColor: '#fff',
-  },
-
-  loadingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 10,
-  },
-
-  loadingText: {
-    marginLeft: 10,
-    fontSize: 13,
-    color: '#666',
-  },
+  container: { flexGrow: 1, padding: 20, alignItems: 'center' },
+  loadingContainer: { flexDirection: 'row', alignItems: 'center', marginTop: 10 },
+  loadingText: { marginLeft: 10, fontSize: 13 },
 });
