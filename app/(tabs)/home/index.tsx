@@ -51,6 +51,7 @@ export default function index() {
     return isNaN(numValue) ? 0 : Math.min(numValue / maxValue, 1);
   };
 
+
   return (
     <ScrollView
       className="flex-1 px-7 py-5"
@@ -81,7 +82,7 @@ export default function index() {
         </View>
         <View className="my-2">
           <Text className="text-lg font-bold" style={{ color: colors.subText }}>
-            {t('SOIL HEALTH SCORE', 'ISKOR NG KALUSUGAN NG LUPA')}
+            {t('SOIL HEALTH SCORE', 'SKOR NG KALUSUGAN NG LUPA')}
           </Text>
         </View>
         <View className="border rounded-2xl h-13 p-4" style={{ borderColor: colors.border, backgroundColor: colors.cardBg }}>
@@ -93,7 +94,7 @@ export default function index() {
           <View className="flex flex-row justify-between gap-2 mt-2">
             <View>
               <AnimatedCircularProgress
-                size={70}
+                size={71}
                 width={4}
                 fill={89}
                 tintColor="#008000"
@@ -154,7 +155,7 @@ export default function index() {
           <SensorCard
             colors={colors}
             icon="thermometer-outline"
-            label={t('Soil Temperature', 'Temperatura ng Lupa')}
+            label={t('Soil Temperature', 'TemperaturA ng Lupa')}
             value={`${getSensorValue('soil_temperature', '--')}°C`}
             opt="20-30°C"
             progress={getProgressValue(getSensorValue('soil_temperature', '0'), 50)}
