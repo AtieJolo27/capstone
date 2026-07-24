@@ -1,15 +1,11 @@
 import { supabase } from '@/lib/supabaseClient';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import {
-    ActivityIndicator,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
-} from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useApp } from '@/app/lib/AppContext';
 import { useThemeColors } from '@/app/lib/useThemeColors';
+import { getApiUrl } from '@/lib/apiConfig';
+import { Ionicons } from '@expo/vector-icons';
 
 interface SoilData {
   nitrogen: number;
@@ -28,6 +24,9 @@ export default function Reasoning() {
   const [soilData, setSoilData] = useState<SoilData | null>(null);
   const [aiResponse, setAiResponse] = useState('');
   const [loadingAI, setLoadingAI] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [loadingData, setLoadingData] = useState(true);
 
   useEffect(() => {
     getLatestSoil();
@@ -40,28 +39,39 @@ export default function Reasoning() {
   }, [soilData, fertilizer, language]);
 
   async function getLatestSoil() {
-    const { data, error } = await supabase
-      .from('crop_predictions')
-      .select('nitrogen, phosphorus, potassium, ph, air_temperature, humidity')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
+    try {
+      setFetchError(null);
+      setLoadingData(true);
 
-    if (error) {
-      console.log(error);
-      return;
+      const { data, error } = await supabase
+        .from('crop_predictions')
+        .select('nitrogen, phosphorus, potassium, ph, air_temperature, humidity')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      setSoilData(data);
+    } catch (err: any) {
+      console.warn('Supabase error:', err);
+      setFetchError(err.message || 'Failed to load soil data');
+    } finally {
+      setLoadingData(false);
     }
-
-    setSoilData(data);
   }
 
   async function askGroqAutomatically(targetFertilizer: string, data: SoilData) {
     setLoadingAI(true);
     setAiResponse('');
+    setAiError(null);
 
-    const responseLanguage = language === 'tagalog'
-      ? `Respond entirely in Tagalog (Filipino). Use Filipino farming terms where appropriate.`
-      : `Respond entirely in English.`;
+    const responseLanguage =
+      language === 'tagalog'
+        ? `Respond entirely in Tagalog (Filipino). Use Filipino farming terms where appropriate.`
+        : `Respond entirely in English.`;
 
     const dynamicPrompt = `
 First, define what ${targetFertilizer} is and its purpose for farming.
@@ -81,20 +91,56 @@ First, define what ${targetFertilizer} is and its purpose for farming.
     `;
 
     try {
-      const res = await fetch('/api/groq', {
+      // Use platform-aware API URL
+      const apiUrl = getApiUrl('/api/groq');
+
+      const res = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: dynamicPrompt }),
       });
 
       const json = await res.json();
-      setAiResponse(json.data || json.error || 'No explanation returned.');
-    } catch (err) {
-      console.log(err);
-      setAiResponse('Failed to reach AI backend.');
+
+      if (!res.ok) {
+        throw new Error(json.error || `API error: ${res.status}`);
+      }
+
+      setAiResponse(json.data || 'No explanation returned.');
+    } catch (err: any) {
+      console.warn(err);
+      setAiError(err.message || 'Failed to reach AI backend.');
+      setAiResponse('');
     } finally {
       setLoadingAI(false);
     }
+  }
+
+  // Loading state for initial data fetch
+  if (loadingData) {
+    return (
+      <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.bg }]}>
+        <ActivityIndicator size="large" color="#184B44" />
+        <Text className="mt-4 text-sm" style={{ color: colors.subText }}>
+          {t('Loading soil data...', 'Naglo-load ng datos ng lupa...')}
+        </Text>
+      </ScrollView>
+    );
+  }
+
+  // Error state for data fetch
+  if (fetchError) {
+    return (
+      <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.bg }]}>
+        <Ionicons name="cloud-offline-outline" size={48} color={colors.mutedText} />
+        <Text className="text-lg font-bold mt-4 text-center" style={{ color: colors.text }}>
+          {t('Error Loading Data', 'Error sa Pag-load ng Datos')}
+        </Text>
+        <Text className="text-sm mt-2 text-center" style={{ color: colors.subText }}>
+          {fetchError}
+        </Text>
+      </ScrollView>
+    );
   }
 
   return (
@@ -104,7 +150,10 @@ First, define what ${targetFertilizer} is and its purpose for farming.
       </Text>
 
       {soilData && (
-        <View className="w-full rounded-xl p-4 mb-4" style={{ backgroundColor: colors.soilCardBg }}>
+        <View
+          className="w-full rounded-xl p-4 mb-4"
+          style={{ backgroundColor: colors.soilCardBg }}
+        >
           <Text className="font-bold text-lg mb-2" style={{ color: colors.text }}>
             {t('Current Soil Status', 'Kasalukuyang Katayuan ng Lupa')}
           </Text>
@@ -119,8 +168,18 @@ First, define what ${targetFertilizer} is and its purpose for farming.
         </View>
       )}
 
-      <View className="w-full rounded-xl p-4" style={{ backgroundColor: colors.isDarkMode ? '#2D1F14' : '#FFF7ED', borderColor: colors.isDarkMode ? '#4A2D1A' : '#FFEDD5', borderWidth: 1 }}>
-        <Text className="font-bold text-lg mb-2" style={{ color: colors.isDarkMode ? '#FDBA74' : '#9A3412' }}>
+      <View
+        className="w-full rounded-xl p-4"
+        style={{
+          backgroundColor: colors.isDarkMode ? '#2D1F14' : '#FFF7ED',
+          borderColor: colors.isDarkMode ? '#4A2D1A' : '#FFEDD5',
+          borderWidth: 1,
+        }}
+      >
+        <Text
+          className="font-bold text-lg mb-2"
+          style={{ color: colors.isDarkMode ? '#FDBA74' : '#9A3412' }}
+        >
           ✨ {t('AI Suitability Analysis', 'Pagsusuri ng Kaangkupan ng AI')}
         </Text>
 
@@ -129,6 +188,15 @@ First, define what ${targetFertilizer} is and its purpose for farming.
             <ActivityIndicator color="#f15a24" />
             <Text style={[styles.loadingText, { color: colors.mutedText }]}>
               {t('Analyzing soil nutrient fit...', 'Sinusuri ang akma ng nutrisyon ng lupa...')}
+            </Text>
+          </View>
+        ) : aiError ? (
+          <View>
+            <Text className="text-md leading-relaxed" style={{ color: '#DC2626' }}>
+              {t('AI analysis unavailable.', 'Hindi available ang pagsusuri ng AI.')}
+            </Text>
+            <Text className="text-sm mt-2" style={{ color: colors.subText }}>
+              {aiError}
             </Text>
           </View>
         ) : (
@@ -146,3 +214,4 @@ const styles = StyleSheet.create({
   loadingContainer: { flexDirection: 'row', alignItems: 'center', marginTop: 10 },
   loadingText: { marginLeft: 10, fontSize: 13 },
 });
+

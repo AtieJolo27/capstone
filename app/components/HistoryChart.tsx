@@ -97,7 +97,7 @@ export default function NutrientHistoryChart() {
   };
 
   return (
-    <View className="p-3">
+    <View className="p-3" accessibilityRole="text" accessibilityLabel={`${t('Nutrient & Soil History', 'Kasaysayan ng Nutrisyon at Lupa')} - ${language === 'tagalog' ? selected.labelTl : selected.label} ${t('chart', 'tsart')}`}>
       <Text className="font-bold text-lg mb-2" style={{ color: colors.text }}>
         {t('Nutrient & Soil History', 'Kasaysayan ng Nutrisyon at Lupa')}
       </Text>

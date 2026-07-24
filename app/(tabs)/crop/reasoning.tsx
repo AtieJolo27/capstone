@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useApp } from '@/app/lib/AppContext';
 import { useThemeColors } from '@/app/lib/useThemeColors';
+import { getApiUrl } from '@/lib/apiConfig';
+import { Ionicons } from '@expo/vector-icons';
 
 interface CropRecommendation {
   crop: string;
@@ -30,6 +32,9 @@ export default function Reasoning() {
   const [latest, setLatest] = useState<CropPrediction | null>(null);
   const [aiResponse, setAiResponse] = useState<string>('');
   const [loadingAI, setLoadingAI] = useState<boolean>(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [loadingData, setLoadingData] = useState(true);
 
   useEffect(() => {
     getLatest();
@@ -43,27 +48,39 @@ export default function Reasoning() {
   }, [latest, crop, language]);
 
   async function getLatest() {
-    const { data, error } = await supabase
-      .from('crop_predictions')
-      .select()
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
+    try {
+      setFetchError(null);
+      setLoadingData(true);
 
-    if (error) {
-      console.log('Supabase error:', error);
-      return;
+      const { data, error } = await supabase
+        .from('crop_predictions')
+        .select()
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      setLatest(data);
+    } catch (err: any) {
+      console.warn('Supabase error:', err);
+      setFetchError(err.message || 'Failed to load soil data');
+    } finally {
+      setLoadingData(false);
     }
-    setLatest(data);
   }
 
   async function askGroqAutomatically(targetCrop: string, data: CropPrediction) {
     setLoadingAI(true);
     setAiResponse('');
+    setAiError(null);
 
-    const responseLanguage = language === 'tagalog'
-      ? `Respond entirely in Tagalog (Filipino). Use Filipino farming terms where appropriate.`
-      : `Respond entirely in English.`;
+    const responseLanguage =
+      language === 'tagalog'
+        ? `Respond entirely in Tagalog (Filipino). Use Filipino farming terms where appropriate.`
+        : `Respond entirely in English.`;
 
     const dynamicPrompt = `
     First, define what ${targetCrop} is and its purpose for farming.
@@ -83,17 +100,26 @@ export default function Reasoning() {
     `;
 
     try {
-      const res = await fetch('/api/groq', {
+      // Use platform-aware API URL
+      const apiUrl = getApiUrl('/api/groq');
+
+      const res = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: dynamicPrompt }),
       });
-      
+
       const json = await res.json();
-      setAiResponse(json.data || json.error || 'No explanation returned.');
-    } catch (err) {
-      setAiResponse('Failed to reach AI server backend.');
-      console.log('AI fetch error:', err);
+
+      if (!res.ok) {
+        throw new Error(json.error || `API error: ${res.status}`);
+      }
+
+      setAiResponse(json.data || 'No explanation returned.');
+    } catch (err: any) {
+      console.warn('AI fetch error:', err);
+      setAiError(err.message || 'Failed to reach AI server.');
+      setAiResponse('');
     } finally {
       setLoadingAI(false);
     }
@@ -103,6 +129,33 @@ export default function Reasoning() {
   const matchedRec = latest?.recommendations?.find(
     (r) => r.crop.toLowerCase() === activeCrop?.toLowerCase()
   );
+
+  // Loading state for initial data fetch
+  if (loadingData) {
+    return (
+      <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.bg }]}>
+        <ActivityIndicator size="large" color="#184B44" />
+        <Text className="mt-4 text-sm" style={{ color: colors.subText }}>
+          {t('Loading soil data...', 'Naglo-load ng datos ng lupa...')}
+        </Text>
+      </ScrollView>
+    );
+  }
+
+  // Error state
+  if (fetchError) {
+    return (
+      <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.bg }]}>
+        <Ionicons name="cloud-offline-outline" size={48} color={colors.mutedText} />
+        <Text className="text-lg font-bold mt-4 text-center" style={{ color: colors.text }}>
+          {t('Error Loading Data', 'Error sa Pag-load ng Datos')}
+        </Text>
+        <Text className="text-sm mt-2 text-center" style={{ color: colors.subText }}>
+          {fetchError}
+        </Text>
+      </ScrollView>
+    );
+  }
 
   return (
     <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.bg }]}>
@@ -117,7 +170,10 @@ export default function Reasoning() {
       )}
 
       {latest && (
-        <View className="w-full rounded-xl p-4 mb-4" style={{ backgroundColor: colors.soilCardBg }}>
+        <View
+          className="w-full rounded-xl p-4 mb-4"
+          style={{ backgroundColor: colors.soilCardBg }}
+        >
           <Text className="font-bold text-lg mb-2" style={{ color: colors.text }}>
             {t('Current Soil Status', 'Kasalukuyang Katayuan ng Lupa')}
           </Text>
@@ -130,15 +186,36 @@ export default function Reasoning() {
         </View>
       )}
 
-      <View className="w-full rounded-xl p-4" style={{ backgroundColor: isDark(colors) ? '#2D1F14' : '#FFF7ED', borderColor: isDark(colors) ? '#4A2D1A' : '#FFEDD5', borderWidth: 1 }}>
-        <Text className="font-bold text-lg mb-2" style={{ color: isDark(colors) ? '#FDBA74' : '#9A3412' }}>
+      <View
+        className="w-full rounded-xl p-4"
+        style={{
+          backgroundColor: colors.isDarkMode ? '#2D1F14' : '#FFF7ED',
+          borderColor: colors.isDarkMode ? '#4A2D1A' : '#FFEDD5',
+          borderWidth: 1,
+        }}
+      >
+        <Text
+          className="font-bold text-lg mb-2"
+          style={{ color: colors.isDarkMode ? '#FDBA74' : '#9A3412' }}
+        >
           ✨ {t('AI Suitability Analysis', 'Pagsusuri ng Kaangkupan ng AI')}
         </Text>
-        
+
         {loadingAI ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator color="#f15a24" size="small" />
-            <Text style={styles.loadingText}>{t('Analyzing soil nutrient fit...', 'Sinusuri ang akma ng nutrisyon ng lupa...')}</Text>
+            <Text style={styles.loadingText}>
+              {t('Analyzing soil nutrient fit...', 'Sinusuri ang akma ng nutrisyon ng lupa...')}
+            </Text>
+          </View>
+        ) : aiError ? (
+          <View>
+            <Text className="text-md leading-relaxed" style={{ color: '#DC2626' }}>
+              {t('AI analysis unavailable.', 'Hindi available ang pagsusuri ng AI.')}
+            </Text>
+            <Text className="text-sm mt-2" style={{ color: colors.subText }}>
+              {aiError}
+            </Text>
           </View>
         ) : (
           <Text className="text-md leading-relaxed" style={{ color: colors.subText }}>
@@ -157,5 +234,6 @@ function isDark(colors: ReturnType<typeof useThemeColors>) {
 const styles = StyleSheet.create({
   container: { flexGrow: 1, padding: 20, alignItems: 'center' },
   loadingContainer: { flexDirection: 'row', alignItems: 'center', marginTop: 10 },
-  loadingText: { marginLeft: 10, fontSize: 13, color: '#666' }
+  loadingText: { marginLeft: 10, fontSize: 13, color: '#666' },
 });
+
