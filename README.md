@@ -293,94 +293,20 @@ Displays
 - Date and time
 
 ---
+# Slide 11 — Progress
 
-# Slide 11 — Sample Prediction
+## Working Features
 
-## Crop Recommendation
+- Supabase Connection
+- Working Machine Learning (Random Forest)
+- Crop Recommendation based on Random Forest
+- Fertilizer Recommendation based on Random Forest
+- AI-Based Reasoning for Crop Recommendation
+- AI-Based Reasoning for Fertilizer Recommendation
+- Charts for Soil Health and Parameters History
 
-Best Crop
 
-Rice
 
-Confidence
 
-94%
 
-Other Suitable Crops
 
-- Corn
-- Tomato
-- Banana
-
----
-
-## Fertilizer Recommendation
-
-Best Fertilizer
-
-Urea
-
-Confidence
-
-91%
-
-Alternative Fertilizers
-
-- NPK
-- Compost
-- DAP
-
----
-
-# Slide 12 — Advantages
-
-GeoPulse provides:
-
-- Real-time soil monitoring
-- AI-powered recommendations
-- Faster decision-making
-- Cloud-based data storage
-- Mobile accessibility
-- Historical monitoring
-- Improved farming efficiency
-
----
-
-# Slide 13 — Limitations
-
-Current limitations include:
-
-- Requires internet connectivity
-- Dataset-dependent predictions
-- Some sensors are simulated
-- No automatic irrigation
-- No pest detection
-- No weather forecasting
-- Prototype implementation only
-
----
-
-# Slide 14 — Future Enhancements
-
-Future versions may include:
-
-- Soil Health Score
-- Explainable AI
-- Weather Forecast Integration
-- GPS Soil Mapping
-- Automatic Irrigation
-- Pest Detection
-- Yield Prediction
-- Farmer Notification System
-
----
-
-# Slide 15 — Conclusion
-
-GeoPulse demonstrates how IoT and Machine Learning can be integrated to support precision agriculture.
-
-By analyzing soil conditions in real time, the platform provides intelligent crop and fertilizer recommendations that can help improve agricultural productivity while promoting efficient resource utilization.
-
----
-
-# Slide 16 — Thank You
