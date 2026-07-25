@@ -34,8 +34,17 @@ export default function BestCrop({ crop_name, percentage }: BestCropProps) {
         >
             <TouchableOpacity
                 activeOpacity={0.7}
-                className="flex-row items-center rounded-2xl p-3 m-1 shadow-sm"
-                style={{ backgroundColor: colors.cardBg, borderColor: colors.cardBorder, borderWidth: 1 }}
+                className="flex-row items-center rounded-2xl p-3 m-1"
+                style={{ 
+                    backgroundColor: colors.sensorCardBg, 
+                    borderColor: colors.sensorCardBorder, 
+                    borderWidth: 1,
+                    shadowColor: colors.primary,
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 4,
+                    elevation: 3,
+                }}
             >
                 <View className="mr-3">
                     <Image
@@ -52,7 +61,7 @@ export default function BestCrop({ crop_name, percentage }: BestCropProps) {
                 </View>
 
                 <View className="flex-1">
-                    <Text className="text-xs uppercase tracking-wide" style={{ color: colors.mutedText }}>
+                    <Text className="text-xs uppercase tracking-wide" style={{ color: colors.greenText }}>
                         Best crop for your field
                     </Text>
 
@@ -70,9 +79,10 @@ export default function BestCrop({ crop_name, percentage }: BestCropProps) {
                             progress={decimal}
                             height={6}
                             color={status.color}
-                            unfilledColor={colors.isDarkMode ? '#374151' : '#EEF2EE'}
+                            unfilledColor={colors.progressTrack}
                             borderWidth={0}
                             width={null}
+                            borderRadius={3}
                         />
                     </View>
                 </View>

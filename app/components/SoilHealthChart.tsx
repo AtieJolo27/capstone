@@ -101,7 +101,7 @@ export default function SoilHealthChart() {
         <Text className="font-bold text-lg" style={{ color: colors.text }}>
           {t('Soil Health Score', 'Iskor ng Kalusugan ng Lupa')}
         </Text>
-        <View className="flex-row items-center">
+        <View className="flex-row items-center" style={{ backgroundColor: colors.cardBgAlt, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 }}>
           <View
             className="w-3 h-3 rounded-full mr-1.5"
             style={{ backgroundColor: getHealthColor(latestScore) }}
@@ -112,22 +112,22 @@ export default function SoilHealthChart() {
         </View>
       </View>
 
-      <View className="flex-row justify-center mb-3 flex-wrap">
+      <View className="flex-row justify-center mb-3 flex-wrap" style={{ backgroundColor: colors.cardBgAlt, borderRadius: 12, padding: 8 }}>
         <View className="flex-row items-center mr-3 mb-1">
           <View className="w-2.5 h-2.5 rounded-full mr-1" style={{ backgroundColor: '#16A34A' }} />
-          <Text style={{ color: colors.mutedText }} className="text-xs">{t('Excellent', 'Napakahusay')} (≥80)</Text>
+          <Text style={{ color: colors.subText }} className="text-xs">{t('Excellent', 'Napakahusay')} (≥80)</Text>
         </View>
         <View className="flex-row items-center mr-3 mb-1">
           <View className="w-2.5 h-2.5 rounded-full mr-1" style={{ backgroundColor: '#EAB308' }} />
-          <Text style={{ color: colors.mutedText }} className="text-xs">{t('Good', 'Mabuti')} (60-79)</Text>
+          <Text style={{ color: colors.subText }} className="text-xs">{t('Good', 'Mabuti')} (60-79)</Text>
         </View>
         <View className="flex-row items-center mr-3 mb-1">
           <View className="w-2.5 h-2.5 rounded-full mr-1" style={{ backgroundColor: '#F97316' }} />
-          <Text style={{ color: colors.mutedText }} className="text-xs">{t('Fair', 'Katamtaman')} (40-59)</Text>
+          <Text style={{ color: colors.subText }} className="text-xs">{t('Fair', 'Katamtaman')} (40-59)</Text>
         </View>
         <View className="flex-row items-center mb-1">
           <View className="w-2.5 h-2.5 rounded-full mr-1" style={{ backgroundColor: '#DC2626' }} />
-          <Text style={{ color: colors.mutedText }} className="text-xs">{t('Poor', 'Mahina')} ({'<'}40)</Text>
+          <Text style={{ color: colors.subText }} className="text-xs">{t('Poor', 'Mahina')} ({'<'}40)</Text>
         </View>
       </View>
 

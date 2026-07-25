@@ -282,7 +282,7 @@ export default function index() {
   if (error && data.length === 0) {
     return (
       <View className="flex-1 items-center justify-center px-6" style={{ backgroundColor: colors.bg }}>
-        <Ionicons name="cloud-offline-outline" size={64} color={colors.mutedText} />
+        <Ionicons name="cloud-offline-outline" size={64} color={colors.greenText} />
         <Text className="text-lg font-bold mt-4 text-center" style={{ color: colors.text }}>
           {t('Connection Error', 'Error sa Koneksyon')}
         </Text>
@@ -291,9 +291,10 @@ export default function index() {
         </Text>
         <TouchableOpacity
           onPress={fetchData}
-          className="mt-6 bg-[#184B44] rounded-xl py-3 px-8"
+          className="mt-6 rounded-xl py-3 px-8"
+          style={{ backgroundColor: colors.primary }}
         >
-          <Text className="text-white font-bold">
+          <Text className="font-bold" style={{ color: '#F0FDF4' }}>
             {t('Retry', 'Subukan Muli')}
           </Text>
         </TouchableOpacity>
@@ -307,14 +308,14 @@ export default function index() {
   return (
     <ScrollView
       className="flex-1 px-7 py-5"
-      contentContainerStyle={{ paddingBottom: 40 }}
+      contentContainerStyle={{ paddingBottom: 100 }}
       style={{ backgroundColor: colors.bg }}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
           onRefresh={onRefresh}
-          tintColor={colors.text}
-          colors={['#184B44']}
+          tintColor={colors.primary}
+          colors={[colors.primary, colors.primaryLight]}
         />
       }
     >
@@ -337,8 +338,13 @@ export default function index() {
                 }}
                 className="w-1/3 border rounded-2xl h-13 p-4"
                 style={{
-                  backgroundColor: isActive ? '#16A34A' : colors.isDarkMode ? '#374151' : '#D1D5DB',
+                  backgroundColor: isActive ? '#16A34A' : colors.isDarkMode ? '#1A3522' : '#DCFCE7',
                   borderColor: isActive ? '#16A34A' : colors.border,
+                  shadowColor: isActive ? '#16A34A' : 'transparent',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: isActive ? 0.3 : 0,
+                  shadowRadius: 4,
+                  elevation: isActive ? 4 : 0,
                 }}
                 accessibilityRole="button"
                 accessibilityLabel={t(`Select ${zone.labelEn}`, `Piliin ang ${zone.labelTl}`)}
@@ -362,15 +368,23 @@ export default function index() {
 
         {/* Soil Health Score */}
         <View className="my-2">
-          <Text className="text-lg font-bold" style={{ color: colors.subText }}>
+          <Text className="text-lg font-bold" style={{ color: colors.greenText }}>
             {t('SOIL HEALTH SCORE', 'SKOR NG KALUSUGAN NG LUPA')}
           </Text>
         </View>
         <View
           className="border rounded-2xl h-13 p-4"
-          style={{ borderColor: colors.border, backgroundColor: colors.cardBg }}
+          style={{ 
+            borderColor: colors.soilCardBorder, 
+            backgroundColor: colors.soilCardBg,
+            shadowColor: colors.primary,
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 6,
+            elevation: 3,
+          }}
         >
-          <View>
+          <View className="flex-row justify-between">
             <TouchableOpacity
               onPress={() => {
                 mediumHaptic();
@@ -379,18 +393,23 @@ export default function index() {
               accessibilityRole="button"
               accessibilityLabel={t('View soil health details', 'Tingnan ang detalye ng kalusugan ng lupa')}
             >
-              <Ionicons name="alert-circle-outline" size={24} color={colors.text} />
+              <Ionicons name="information-circle-outline" size={24} color={colors.primary} />
             </TouchableOpacity>
+            <View className="rounded-full px-2 py-0.5" style={{ backgroundColor: colors.cardBgAlt }}>
+              <Text className="text-xs font-bold" style={{ color: colors.primary }}>
+                {t('Details', 'Detalye')}
+              </Text>
+            </View>
           </View>
           <View className="flex flex-row justify-between gap-2 mt-2">
             <View>
               <AnimatedCircularProgress
                 size={71}
-                width={4}
+                width={5}
                 fill={healthInfo.score}
                 tintColor={healthInfo.score >= 80 ? '#16A34A' : healthInfo.score >= 60 ? '#EAB308' : healthInfo.score >= 40 ? '#F97316' : '#DC2626'}
                 onAnimationComplete={() => {}}
-                backgroundColor={colors.isDarkMode ? '#374151' : '#D1D5DB'}
+                backgroundColor={colors.isDarkMode ? '#1A3522' : '#DCFCE7'}
               >
                 {(percentage: number) => (
                   <Text
@@ -418,14 +437,14 @@ export default function index() {
                 </Text>
               </View>
               <View className="flex flex-col justify-start gap-2">
-                <Text className="text-md font-bold text-center" style={{ color: colors.subText }}>
+                <Text className="text-md font-bold text-center" style={{ color: colors.greenText }}>
                   {t('Good', 'Mabuti')}
                 </Text>
-                <Text className="text-md font-bold text-center" style={{ color: colors.subText }}>3.2</Text>
-                <Text className="text-md font-bold text-center" style={{ color: colors.subText }}>
+                <Text className="text-md font-bold text-center" style={{ color: colors.greenText }}>3.2</Text>
+                <Text className="text-md font-bold text-center" style={{ color: colors.greenText }}>
                   {t('Medium', 'Katamtaman')}
                 </Text>
-                <Text className="text-md font-bold text-center" style={{ color: colors.subText }}>
+                <Text className="text-md font-bold text-center" style={{ color: colors.greenText }}>
                   {t('Ready for Planting', 'Handa na sa Pagtatanim')}
                 </Text>
               </View>
@@ -542,7 +561,16 @@ export default function index() {
           }}
         >
           <View
-            style={{ backgroundColor: colors.cardBg, borderRadius: 16, padding: 24 }}
+            style={{ 
+              backgroundColor: colors.cardBg, 
+              borderRadius: 20, 
+              padding: 24,
+              shadowColor: colors.primary,
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.15,
+              shadowRadius: 12,
+              elevation: 8,
+            }}
           >
             <TouchableOpacity
               onPress={() => {
@@ -553,18 +581,22 @@ export default function index() {
               accessibilityRole="button"
               accessibilityLabel={t('Close', 'Isara')}
             >
-              <Ionicons name="close-circle-outline" size={28} color={colors.text} />
+              <Ionicons name="close-circle" size={28} color={colors.primary} />
             </TouchableOpacity>
-            <Text
-              style={{
-                color: colors.text,
-                fontSize: 18,
-                fontWeight: 'bold',
-                marginTop: 12,
-              }}
-            >
-              {t('Soil Health Score Breakdown', 'Paghiwa-hiwalay ng Skor ng Kalusugan ng Lupa')}
-            </Text>
+            <View className="flex-row items-center mb-4 mt-2">
+              <View className="w-10 h-10 rounded-full items-center justify-center mr-3" style={{ backgroundColor: colors.cardBgAlt }}>
+                <Ionicons name="leaf-outline" size={20} color={colors.primary} />
+              </View>
+              <Text
+                style={{
+                  color: colors.text,
+                  fontSize: 18,
+                  fontWeight: 'bold',
+                }}
+              >
+                {t('Soil Health Score Breakdown', 'Paghiwa-hiwalay ng Skor ng Kalusugan ng Lupa')}
+              </Text>
+            </View>
 
             {healthInfo.breakdown.map((item, index) => (
               <View key={index} className="mt-4">
@@ -572,7 +604,7 @@ export default function index() {
                   <Text style={{ color: colors.subText, fontSize: 13 }}>{item.label}</Text>
                   <Text
                     style={{
-                      color: item.score >= 75 ? '#16A34A' : item.score >= 50 ? '#EAB308' : '#DC2626',
+                      color: item.score >= 75 ? colors.primary : item.score >= 50 ? '#EAB308' : '#DC2626',
                       fontWeight: 'bold',
                       fontSize: 13,
                     }}
@@ -583,10 +615,11 @@ export default function index() {
                 <Progress.Bar
                   progress={item.score / item.max}
                   height={8}
-                  color={item.score >= 80 ? '#16A34A' : item.score >= 60 ? '#EAB308' : item.score >= 40 ? '#F97316' : '#DC2626'}
-                  unfilledColor={colors.isDarkMode ? '#374151' : '#E5E7EB'}
+                  color={item.score >= 80 ? colors.primary : item.score >= 60 ? '#EAB308' : item.score >= 40 ? '#F97316' : '#DC2626'}
+                  unfilledColor={colors.progressTrack}
                   borderWidth={0}
                   width={null}
+                  borderRadius={4}
                 />
               </View>
             ))}
@@ -601,10 +634,10 @@ export default function index() {
                   healthInfo.interpretation?.tl || 'Ang kondisyon ng iyong lupa ay sinusuri batay sa 6 na pangunahing parameter.'
                 )}
               </Text>
-              <Text className="text-center text-xs mt-2" style={{ color: colors.mutedText }}>
+              <Text className="text-center text-xs mt-2" style={{ color: colors.greenText }}>
                 {t('Score based on N, P, K, pH, temperature & humidity', 'Skor batay sa N, P, K, pH, temperatura at halumigmig')}
               </Text>
-              <Text className="text-center text-xs" style={{ color: colors.mutedText }}>
+              <Text className="text-center text-xs" style={{ color: colors.greenText }}>
                 {t('Each factor scored against general crop optimal ranges', 'Bawat factor ay isinama laban sa general optimal range ng pananim')}
               </Text>
             </View>
@@ -636,13 +669,20 @@ function SensorCard({
       style={{
         backgroundColor: colors.sensorCardBg,
         borderColor: colors.sensorCardBorder,
+        shadowColor: colors.primary,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.08,
+        shadowRadius: 3,
+        elevation: 2,
       }}
       accessibilityRole="text"
       accessibilityLabel={`${label}: ${value}, optimal range: ${opt}`}
     >
       <View className="flex flex-col items-center justify-center">
-        <Ionicons name={icon} size={17} color={colors.text} />
-        <Text className="text-sm" style={{ color: colors.text }}>
+        <View className="w-8 h-8 rounded-full items-center justify-center mb-1" style={{ backgroundColor: colors.cardBgAlt }}>
+          <Ionicons name={icon} size={16} color={colors.primary} />
+        </View>
+        <Text className="text-xs font-semibold" style={{ color: colors.subText }}>
           {label}
         </Text>
       </View>
@@ -655,14 +695,14 @@ function SensorCard({
         </Text>
       </View>
       <View>
-        <Text className="text-sm font-bold text-start" style={{ color: colors.mutedText }}>
+        <Text className="text-xs font-semibold text-start" style={{ color: colors.greenText }}>
           Opt: {opt}
         </Text>
         <Progress.Bar
           progress={progress}
           height={5}
-          color="rgba(0, 128, 0, 1)"
-          unfilledColor="rgba(214, 228, 214, 0.8)"
+          color={colors.primary}
+          unfilledColor={colors.isDarkMode ? '#1A3522' : '#DCFCE7'}
           borderWidth={0}
           width={75}
         />

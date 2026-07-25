@@ -152,7 +152,7 @@ First, define what ${targetFertilizer} is and its purpose for farming.
       {soilData && (
         <View
           className="w-full rounded-xl p-4 mb-4"
-          style={{ backgroundColor: colors.soilCardBg }}
+          style={{ backgroundColor: colors.soilCardBg, borderColor: colors.soilCardBorder, borderWidth: 1 }}
         >
           <Text className="font-bold text-lg mb-2" style={{ color: colors.text }}>
             {t('Current Soil Status', 'Kasalukuyang Katayuan ng Lupa')}

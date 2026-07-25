@@ -34,8 +34,17 @@ export default function RecommendedCrops({ crop_name, percentage }: RecommendedC
         >
             <TouchableOpacity
                 activeOpacity={0.7}
-                className="flex-row items-center rounded-2xl p-3 m-1 shadow-sm"
-                style={{ backgroundColor: colors.cardBg, borderColor: colors.cardBorder, borderWidth: 1 }}
+                className="flex-row items-center rounded-2xl p-3 m-1"
+                style={{ 
+                    backgroundColor: colors.cardBg, 
+                    borderColor: colors.cardBorder, 
+                    borderWidth: 1,
+                    shadowColor: colors.primary,
+                    shadowOffset: { width: 0, height: 1 },
+                    shadowOpacity: 0.06,
+                    shadowRadius: 3,
+                    elevation: 2,
+                }}
             >
                 <View className="mr-3">
                     <Image
@@ -66,9 +75,10 @@ export default function RecommendedCrops({ crop_name, percentage }: RecommendedC
                             progress={decimal}
                             height={6}
                             color={status.color}
-                            unfilledColor={colors.isDarkMode ? '#374151' : '#EEF2EE'}
+                            unfilledColor={colors.progressTrack}
                             borderWidth={0}
                             width={null}
+                            borderRadius={3}
                         />
                     </View>
                 </View>

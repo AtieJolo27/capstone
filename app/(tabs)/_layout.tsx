@@ -70,11 +70,25 @@ export default function RootLayout() {
     <Tabs screenOptions={{ 
       headerShown: false,
       tabBarStyle: {
-        backgroundColor: '#184B44',
+        backgroundColor: '#0D5E33',
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        height: 65,
+        paddingBottom: 8,
+        paddingTop: 8,
+        shadowColor: '#0D5E33',
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 10,
+        borderTopWidth: 0,
       },
-      tabBarActiveTintColor: 'green',
-      tabBarInactiveTintColor: 'white',
-
+      tabBarActiveTintColor: '#22C55E',
+      tabBarInactiveTintColor: 'rgba(255,255,255,0.6)',
+      tabBarLabelStyle: {
+        fontSize: 11,
+        fontWeight: '600',
+      },
      }}>
       <Tabs.Screen name='home'
       options={{

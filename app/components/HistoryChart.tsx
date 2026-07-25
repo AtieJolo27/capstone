@@ -112,12 +112,17 @@ export default function NutrientHistoryChart() {
             }}
             className="mr-2 px-3 py-1.5 rounded-full"
             style={{
-              backgroundColor: selected.key === metric.key ? metric.color : (colors.isDarkMode ? '#374151' : '#F3F4F6'),
+              backgroundColor: selected.key === metric.key ? metric.color : (colors.isDarkMode ? '#1A3522' : '#DCFCE7'),
+              shadowColor: selected.key === metric.key ? metric.color : 'transparent',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: selected.key === metric.key ? 0.3 : 0,
+              shadowRadius: 4,
+              elevation: selected.key === metric.key ? 4 : 0,
             }}
           >
             <Text
               className="text-xs font-semibold"
-              style={{ color: selected.key === metric.key ? 'white' : (colors.isDarkMode ? '#D1D5DB' : '#6B7280') }}
+              style={{ color: selected.key === metric.key ? 'white' : (colors.isDarkMode ? '#86EFAC' : '#4A6741') }}
             >
               {language === 'tagalog' ? metric.labelTl : metric.label}
             </Text>

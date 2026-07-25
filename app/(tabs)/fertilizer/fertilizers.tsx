@@ -100,7 +100,7 @@ export default function Fertilizers() {
   if (loading && fertilizers.length === 0) {
     return (
       <View className="flex-1 items-center justify-center" style={{ backgroundColor: colors.bg }}>
-        <ActivityIndicator size="large" color="#184B44" />
+        <ActivityIndicator size="large" color={colors.primary} />
         <Text className="mt-4 text-sm" style={{ color: colors.subText }}>
           {t('Loading fertilizer recommendations...', 'Naglo-load ng mga rekomendasyon sa pataba...')}
         </Text>
@@ -121,9 +121,10 @@ export default function Fertilizers() {
         </Text>
         <TouchableOpacity
           onPress={getFertilizers}
-          className="mt-6 bg-[#184B44] rounded-xl py-3 px-8"
+          className="mt-6 rounded-xl py-3 px-8"
+          style={{ backgroundColor: colors.primary }}
         >
-          <Text className="text-white font-bold">
+          <Text className="font-bold" style={{ color: '#F0FDF4' }}>
             {t('Retry', 'Subukan Muli')}
           </Text>
         </TouchableOpacity>
@@ -135,7 +136,7 @@ export default function Fertilizers() {
   if (fertilizers.length === 0) {
     return (
       <View className="flex-1 items-center justify-center px-6" style={{ backgroundColor: colors.bg }}>
-        <Ionicons name="flask-outline" size={64} color={colors.mutedText} />
+        <Ionicons name="flask-outline" size={64} color={colors.greenText} />
         <Text className="text-lg font-bold mt-4 text-center" style={{ color: colors.text }}>
           {t('No Recommendations Yet', 'Wala Pang Rekomendasyon')}
         </Text>

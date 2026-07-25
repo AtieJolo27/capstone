@@ -28,16 +28,23 @@ export default function UrgentCard({ field, message, date, severity = 'high' }: 
     <Link href="/(tabs)/crop/reasoning" asChild>
       <TouchableOpacity
         onPress={() => lightHaptic()}
-        className="flex-1 flex-row border border-solid rounded-lg m-1"
+        className="flex-1 flex-row border border-solid rounded-2xl m-1"
         style={{
           borderColor: colors.isDarkMode ? darkBorder : lightBorder,
-          backgroundColor: colors.isDarkMode ? '#1F2937' : '#FFFFFF',
+          backgroundColor: colors.isDarkMode ? '#14281A' : '#FFFFFF',
+          shadowColor: severity === 'high' ? '#DC2626' : severity === 'medium' ? '#EAB308' : '#6B7280',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.08,
+          shadowRadius: 4,
+          elevation: 2,
         }}
         accessibilityRole="button"
         accessibilityLabel={`${severity} alert: ${field}. ${message}`}
       >
         <View className="p-2 justify-center">
-          <Ionicons name={sevColors.icon} size={24} color={sevColors.text} />
+          <View className="w-10 h-10 rounded-full items-center justify-center" style={{ backgroundColor: sevColors.bg }}>
+            <Ionicons name={sevColors.icon} size={20} color={sevColors.text} />
+          </View>
         </View>
         <View className="flex-1 py-2 pr-2">
           <View className="flex-row items-center justify-between">

@@ -155,12 +155,12 @@ export default function ProfileScreen() {
   const textColor = isDarkMode ? '#F9FAFB' : '#1F2937';
   const subTextColor = isDarkMode ? '#9CA3AF' : '#6B7280';
   const borderColor = isDarkMode ? '#374151' : '#E5E7EB';
-  const headerBg = isDarkMode ? '#0F3D37' : '#184B44';
+  const headerBg = isDarkMode ? '#0A4A28' : '#0D5E33';
 
   return (
     <View className="flex-1" style={{ backgroundColor: bgColor }}>
       {/* Header */}
-      <View className="pt-12 pb-8 px-6 rounded-b-3xl" style={{ backgroundColor: headerBg }}>
+      <View className="pt-12 pb-8 px-6 rounded-b-3xl" style={{ backgroundColor: headerBg, shadowColor: '#0D5E33', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8 }}>
         <View className="flex-row items-center justify-between mb-4">
           <TouchableOpacity onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={24} color="white" />
