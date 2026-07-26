@@ -522,7 +522,7 @@ BEGIN
     END IF;
 END $$;
 
-/* Five readings per device. Sample 5 is always the newest reading for latestOfMany(). */
+/* Six readings per device: five historical readings plus sample 6, the newest for latestOfMany(). */
 WITH reading_seed (
     sensor_code,
     latest_soil_moisture,
@@ -548,11 +548,12 @@ WITH reading_seed (
 ),
 sample_seed (sample_number, historical_offset) AS (
     VALUES
-        (1::integer, interval '10 days'),
-        (2::integer, interval '7 days'),
-        (3::integer, interval '4 days'),
-        (4::integer, interval '2 days'),
-        (5::integer, interval '0 seconds')
+        (1::integer, interval '13 days'),
+        (2::integer, interval '10 days'),
+        (3::integer, interval '7 days'),
+        (4::integer, interval '4 days'),
+        (5::integer, interval '2 days'),
+        (6::integer, interval '0 seconds')
 ),
 reading_payload AS (
     SELECT
@@ -560,32 +561,32 @@ reading_payload AS (
         r.sensor_code,
         s.sample_number,
         CASE
-            WHEN s.sample_number = 5 THEN r.latest_soil_moisture
-            ELSE r.latest_soil_moisture + ((6 - s.sample_number) * 1.2)
+            WHEN s.sample_number = 6 THEN r.latest_soil_moisture
+            ELSE r.latest_soil_moisture + ((7 - s.sample_number) * 1.2)
         END AS soil_moisture,
         CASE
-            WHEN s.sample_number = 5 THEN r.latest_soil_temperature
-            ELSE r.latest_soil_temperature - ((6 - s.sample_number) * 0.15)
+            WHEN s.sample_number = 6 THEN r.latest_soil_temperature
+            ELSE r.latest_soil_temperature - ((7 - s.sample_number) * 0.15)
         END AS soil_temperature,
         CASE
-            WHEN s.sample_number = 5 THEN r.latest_air_temperature
-            ELSE r.latest_air_temperature - ((6 - s.sample_number) * 0.10)
+            WHEN s.sample_number = 6 THEN r.latest_air_temperature
+            ELSE r.latest_air_temperature - ((7 - s.sample_number) * 0.10)
         END AS air_temperature,
         CASE
-            WHEN s.sample_number = 5 THEN r.latest_humidity
-            ELSE r.latest_humidity + ((6 - s.sample_number) * 0.8)
+            WHEN s.sample_number = 6 THEN r.latest_humidity
+            ELSE r.latest_humidity + ((7 - s.sample_number) * 0.8)
         END AS humidity,
         CASE
-            WHEN s.sample_number = 5 THEN r.latest_ph
-            WHEN r.sensor_code IN ('DEMO-005', 'DEMO-006') THEN r.latest_ph + ((6 - s.sample_number) * 0.12)
-            ELSE r.latest_ph - ((6 - s.sample_number) * 0.03)
+            WHEN s.sample_number = 6 THEN r.latest_ph
+            WHEN r.sensor_code IN ('DEMO-005', 'DEMO-006') THEN r.latest_ph + ((7 - s.sample_number) * 0.12)
+            ELSE r.latest_ph - ((7 - s.sample_number) * 0.03)
         END AS ph,
-        (r.latest_nitrogen + ((6 - s.sample_number) * 2))::bigint AS nitrogen,
-        (r.latest_phosphorus + ((6 - s.sample_number) * 1))::bigint AS phosphorus,
-        (r.latest_potassium + ((6 - s.sample_number) * 2))::bigint AS potassium,
-        CASE WHEN s.sample_number = 5 THEN r.latest_status ELSE 'normal' END AS reading_status,
+        (r.latest_nitrogen + ((7 - s.sample_number) * 2))::bigint AS nitrogen,
+        (r.latest_phosphorus + ((7 - s.sample_number) * 1))::bigint AS phosphorus,
+        (r.latest_potassium + ((7 - s.sample_number) * 2))::bigint AS potassium,
+        CASE WHEN s.sample_number = 6 THEN r.latest_status ELSE 'normal' END AS reading_status,
         CASE
-            WHEN s.sample_number = 5 THEN current_timestamp - r.latest_offset
+            WHEN s.sample_number = 6 THEN current_timestamp - r.latest_offset
             ELSE current_timestamp - s.historical_offset
         END AS recorded_at
     FROM reading_seed r
@@ -803,7 +804,7 @@ INSERT INTO fertilizer_predictions (
     sensor_id,
     farm_id,
     best_crop,
-    fertilizer_name,
+    best_fertilizer,
     application_rate,
     application_unit,
     confidence_score,
@@ -841,22 +842,58 @@ WHERE NOT EXISTS (
 )
 RETURNING id, crop_prediction_id, reading_id, sensor_id;
 
-/* Lightweight confirmation output. These are only the marked demo rows. */
+/* Lightweight confirmation output, strictly scoped to this marked demo dataset. */
+WITH demo_farm AS (
+    SELECT id
+      FROM farms
+     WHERE farm_name = 'GeoPulse Demo Farm'
+       AND description = 'GeoPulse demo GIS seed v1 | farm'
+),
+demo_devices AS (
+    SELECT d.id, d.farm_id
+      FROM sensor_devices d
+      JOIN demo_farm f ON f.id = d.farm_id
+     WHERE (d.sensor_code, d.serial_number, d.device_name) IN (
+        ('DEMO-001', 'GP-DEMO-GIS-V1-001', 'GeoPulse Demo Soil Sensor DEMO-001'),
+        ('DEMO-002', 'GP-DEMO-GIS-V1-002', 'GeoPulse Demo Soil Sensor DEMO-002'),
+        ('DEMO-003', 'GP-DEMO-GIS-V1-003', 'GeoPulse Demo Soil Sensor DEMO-003'),
+        ('DEMO-004', 'GP-DEMO-GIS-V1-004', 'GeoPulse Demo Soil Sensor DEMO-004'),
+        ('DEMO-005', 'GP-DEMO-GIS-V1-005', 'GeoPulse Demo Soil Sensor DEMO-005'),
+        ('DEMO-006', 'GP-DEMO-GIS-V1-006', 'GeoPulse Demo Soil Sensor DEMO-006'),
+        ('DEMO-007', 'GP-DEMO-GIS-V1-007', 'GeoPulse Demo Soil Sensor DEMO-007'),
+        ('DEMO-008', 'GP-DEMO-GIS-V1-008', 'GeoPulse Demo Soil Sensor DEMO-008')
+     )
+),
+demo_readings AS (
+    SELECT r.id, r.sensor_id
+      FROM sensor_readings r
+      JOIN demo_devices d ON d.id = r.sensor_id
+     WHERE r.validation_notes LIKE 'GeoPulse demo GIS seed v1 | reading | %'
+),
+demo_crops AS (
+    SELECT c.id
+      FROM crop_predictions c
+      JOIN demo_readings r ON r.id = c.reading_id
+      JOIN demo_devices d ON d.id = c.sensor_id
+     WHERE c.farm_id = d.farm_id
+       AND c.model_name = 'GeoPulse Demo Crop Model'
+       AND c.model_version = '1.0-demo'
+)
 SELECT
-    (SELECT count(*) FROM farms WHERE description = 'GeoPulse demo GIS seed v1 | farm') AS demo_farms,
-    (SELECT count(*) FROM zones WHERE description LIKE 'GeoPulse demo GIS seed v1 | zone | %') AS demo_zones,
-    (SELECT count(*) FROM sensor_devices WHERE sensor_code IN ('DEMO-001', 'DEMO-002', 'DEMO-003', 'DEMO-004', 'DEMO-005', 'DEMO-006', 'DEMO-007', 'DEMO-008')) AS demo_sensors,
-    (SELECT count(*) FROM sensor_readings WHERE validation_notes LIKE 'GeoPulse demo GIS seed v1 | reading | %') AS demo_readings,
-    (SELECT count(*) FROM alerts WHERE message LIKE 'GeoPulse demo GIS seed v1 | alert | %') AS demo_alerts,
-    (SELECT count(*) FROM crop_predictions WHERE model_name = 'GeoPulse Demo Crop Model' AND model_version = '1.0-demo') AS demo_crop_predictions,
-    (SELECT count(*) FROM fertilizer_predictions WHERE model_name = 'GeoPulse Demo Fertilizer Model' AND model_version = '1.0-demo') AS demo_fertilizer_predictions;
+    (SELECT count(*) FROM demo_farm) AS demo_farms,
+    (SELECT count(*) FROM zones z JOIN demo_farm f ON f.id = z.farm_id WHERE z.description LIKE 'GeoPulse demo GIS seed v1 | zone | %') AS demo_zones,
+    (SELECT count(*) FROM demo_devices) AS demo_sensors,
+    (SELECT count(*) FROM demo_readings) AS demo_readings,
+    (SELECT count(*) FROM alerts a JOIN demo_devices d ON d.id = a.sensor_id WHERE a.farm_id = d.farm_id AND a.message LIKE 'GeoPulse demo GIS seed v1 | alert | %') AS demo_alerts,
+    (SELECT count(*) FROM demo_crops) AS demo_crop_predictions,
+    (SELECT count(*) FROM fertilizer_predictions fp JOIN demo_crops c ON c.id = fp.crop_prediction_id WHERE fp.model_name = 'GeoPulse Demo Fertilizer Model' AND fp.model_version = '1.0-demo') AS demo_fertilizer_predictions;
 
 COMMIT;
 
 
 /*
  =============================================================================
- ROLLBACK (COPY THIS BLOCK ALONE INTO A NEW SUPABASE SQL EDITOR QUERY)
+ ROLLBACK (COPY ONLY THE SQL FROM BEGIN; THROUGH COMMIT; BELOW, EXCLUDING THIS COMMENT)
  =============================================================================
  This rollback only removes rows bearing the exact GeoPulse demo markers above.
  It first refuses to run if a later non-demo row references demo data, avoiding
@@ -865,6 +902,7 @@ COMMIT;
  BEGIN;
  SET LOCAL lock_timeout = '5s';
  SET LOCAL statement_timeout = '30s';
+ SET LOCAL search_path TO public, pg_catalog;
  SELECT pg_advisory_xact_lock(hashtextextended('geopulse-demo-gis-seed-v1', 0));
 
  DO $$
@@ -880,6 +918,16 @@ COMMIT;
                    FROM sensor_devices d
                    JOIN farms f ON f.id = d.farm_id
                   WHERE f.description = seed_key || ' | farm'
+                    AND (d.sensor_code, d.serial_number, d.device_name) IN (
+                        ('DEMO-001', 'GP-DEMO-GIS-V1-001', 'GeoPulse Demo Soil Sensor DEMO-001'),
+                        ('DEMO-002', 'GP-DEMO-GIS-V1-002', 'GeoPulse Demo Soil Sensor DEMO-002'),
+                        ('DEMO-003', 'GP-DEMO-GIS-V1-003', 'GeoPulse Demo Soil Sensor DEMO-003'),
+                        ('DEMO-004', 'GP-DEMO-GIS-V1-004', 'GeoPulse Demo Soil Sensor DEMO-004'),
+                        ('DEMO-005', 'GP-DEMO-GIS-V1-005', 'GeoPulse Demo Soil Sensor DEMO-005'),
+                        ('DEMO-006', 'GP-DEMO-GIS-V1-006', 'GeoPulse Demo Soil Sensor DEMO-006'),
+                        ('DEMO-007', 'GP-DEMO-GIS-V1-007', 'GeoPulse Demo Soil Sensor DEMO-007'),
+                        ('DEMO-008', 'GP-DEMO-GIS-V1-008', 'GeoPulse Demo Soil Sensor DEMO-008')
+                    )
              )
      ) THEN
          RAISE EXCEPTION 'Rollback stopped: threshold_settings now references demo data. Review it manually before deleting the demo.';
@@ -890,11 +938,21 @@ COMMIT;
            FROM sensor_readings r
           WHERE r.sensor_id IN (
                   SELECT d.id
-                    FROM sensor_devices d
-                    JOIN farms f ON f.id = d.farm_id
-                   WHERE f.description = seed_key || ' | farm'
+                  FROM sensor_devices d
+                   JOIN farms f ON f.id = d.farm_id
+                  WHERE f.description = seed_key || ' | farm'
+                    AND (d.sensor_code, d.serial_number, d.device_name) IN (
+                        ('DEMO-001', 'GP-DEMO-GIS-V1-001', 'GeoPulse Demo Soil Sensor DEMO-001'),
+                        ('DEMO-002', 'GP-DEMO-GIS-V1-002', 'GeoPulse Demo Soil Sensor DEMO-002'),
+                        ('DEMO-003', 'GP-DEMO-GIS-V1-003', 'GeoPulse Demo Soil Sensor DEMO-003'),
+                        ('DEMO-004', 'GP-DEMO-GIS-V1-004', 'GeoPulse Demo Soil Sensor DEMO-004'),
+                        ('DEMO-005', 'GP-DEMO-GIS-V1-005', 'GeoPulse Demo Soil Sensor DEMO-005'),
+                        ('DEMO-006', 'GP-DEMO-GIS-V1-006', 'GeoPulse Demo Soil Sensor DEMO-006'),
+                        ('DEMO-007', 'GP-DEMO-GIS-V1-007', 'GeoPulse Demo Soil Sensor DEMO-007'),
+                        ('DEMO-008', 'GP-DEMO-GIS-V1-008', 'GeoPulse Demo Soil Sensor DEMO-008')
+                    )
                 )
-            AND r.validation_notes NOT LIKE seed_key || ' | reading | %'
+            AND NOT COALESCE(r.validation_notes LIKE seed_key || ' | reading | %', false)
      ) THEN
          RAISE EXCEPTION 'Rollback stopped: a non-demo sensor reading references a demo device.';
      END IF;
@@ -909,14 +967,37 @@ COMMIT;
                           FROM sensor_devices d
                           JOIN farms f ON f.id = d.farm_id
                          WHERE f.description = seed_key || ' | farm'
+                           AND (d.sensor_code, d.serial_number, d.device_name) IN (
+                               ('DEMO-001', 'GP-DEMO-GIS-V1-001', 'GeoPulse Demo Soil Sensor DEMO-001'),
+                               ('DEMO-002', 'GP-DEMO-GIS-V1-002', 'GeoPulse Demo Soil Sensor DEMO-002'),
+                               ('DEMO-003', 'GP-DEMO-GIS-V1-003', 'GeoPulse Demo Soil Sensor DEMO-003'),
+                               ('DEMO-004', 'GP-DEMO-GIS-V1-004', 'GeoPulse Demo Soil Sensor DEMO-004'),
+                               ('DEMO-005', 'GP-DEMO-GIS-V1-005', 'GeoPulse Demo Soil Sensor DEMO-005'),
+                               ('DEMO-006', 'GP-DEMO-GIS-V1-006', 'GeoPulse Demo Soil Sensor DEMO-006'),
+                               ('DEMO-007', 'GP-DEMO-GIS-V1-007', 'GeoPulse Demo Soil Sensor DEMO-007'),
+                               ('DEMO-008', 'GP-DEMO-GIS-V1-008', 'GeoPulse Demo Soil Sensor DEMO-008')
+                           )
                     )
                  OR a.reading_id IN (
                         SELECT r.id
                           FROM sensor_readings r
-                         WHERE r.validation_notes LIKE seed_key || ' | reading | %'
+                          JOIN sensor_devices d ON d.id = r.sensor_id
+                          JOIN farms f ON f.id = d.farm_id
+                         WHERE f.description = seed_key || ' | farm'
+                           AND (d.sensor_code, d.serial_number, d.device_name) IN (
+                               ('DEMO-001', 'GP-DEMO-GIS-V1-001', 'GeoPulse Demo Soil Sensor DEMO-001'),
+                               ('DEMO-002', 'GP-DEMO-GIS-V1-002', 'GeoPulse Demo Soil Sensor DEMO-002'),
+                               ('DEMO-003', 'GP-DEMO-GIS-V1-003', 'GeoPulse Demo Soil Sensor DEMO-003'),
+                               ('DEMO-004', 'GP-DEMO-GIS-V1-004', 'GeoPulse Demo Soil Sensor DEMO-004'),
+                               ('DEMO-005', 'GP-DEMO-GIS-V1-005', 'GeoPulse Demo Soil Sensor DEMO-005'),
+                               ('DEMO-006', 'GP-DEMO-GIS-V1-006', 'GeoPulse Demo Soil Sensor DEMO-006'),
+                               ('DEMO-007', 'GP-DEMO-GIS-V1-007', 'GeoPulse Demo Soil Sensor DEMO-007'),
+                               ('DEMO-008', 'GP-DEMO-GIS-V1-008', 'GeoPulse Demo Soil Sensor DEMO-008')
+                           )
+                           AND r.validation_notes LIKE seed_key || ' | reading | %'
                     )
                 )
-            AND a.message NOT LIKE seed_key || ' | alert | %'
+            AND NOT COALESCE(a.message LIKE seed_key || ' | alert | %', false)
      ) THEN
          RAISE EXCEPTION 'Rollback stopped: a non-demo alert references demo data.';
      END IF;
@@ -931,14 +1012,40 @@ COMMIT;
                           FROM sensor_devices d
                           JOIN farms f ON f.id = d.farm_id
                          WHERE f.description = seed_key || ' | farm'
+                           AND (d.sensor_code, d.serial_number, d.device_name) IN (
+                               ('DEMO-001', 'GP-DEMO-GIS-V1-001', 'GeoPulse Demo Soil Sensor DEMO-001'),
+                               ('DEMO-002', 'GP-DEMO-GIS-V1-002', 'GeoPulse Demo Soil Sensor DEMO-002'),
+                               ('DEMO-003', 'GP-DEMO-GIS-V1-003', 'GeoPulse Demo Soil Sensor DEMO-003'),
+                               ('DEMO-004', 'GP-DEMO-GIS-V1-004', 'GeoPulse Demo Soil Sensor DEMO-004'),
+                               ('DEMO-005', 'GP-DEMO-GIS-V1-005', 'GeoPulse Demo Soil Sensor DEMO-005'),
+                               ('DEMO-006', 'GP-DEMO-GIS-V1-006', 'GeoPulse Demo Soil Sensor DEMO-006'),
+                               ('DEMO-007', 'GP-DEMO-GIS-V1-007', 'GeoPulse Demo Soil Sensor DEMO-007'),
+                               ('DEMO-008', 'GP-DEMO-GIS-V1-008', 'GeoPulse Demo Soil Sensor DEMO-008')
+                           )
                     )
                  OR c.reading_id IN (
                         SELECT r.id
                           FROM sensor_readings r
-                         WHERE r.validation_notes LIKE seed_key || ' | reading | %'
+                          JOIN sensor_devices d ON d.id = r.sensor_id
+                          JOIN farms f ON f.id = d.farm_id
+                         WHERE f.description = seed_key || ' | farm'
+                           AND (d.sensor_code, d.serial_number, d.device_name) IN (
+                               ('DEMO-001', 'GP-DEMO-GIS-V1-001', 'GeoPulse Demo Soil Sensor DEMO-001'),
+                               ('DEMO-002', 'GP-DEMO-GIS-V1-002', 'GeoPulse Demo Soil Sensor DEMO-002'),
+                               ('DEMO-003', 'GP-DEMO-GIS-V1-003', 'GeoPulse Demo Soil Sensor DEMO-003'),
+                               ('DEMO-004', 'GP-DEMO-GIS-V1-004', 'GeoPulse Demo Soil Sensor DEMO-004'),
+                               ('DEMO-005', 'GP-DEMO-GIS-V1-005', 'GeoPulse Demo Soil Sensor DEMO-005'),
+                               ('DEMO-006', 'GP-DEMO-GIS-V1-006', 'GeoPulse Demo Soil Sensor DEMO-006'),
+                               ('DEMO-007', 'GP-DEMO-GIS-V1-007', 'GeoPulse Demo Soil Sensor DEMO-007'),
+                               ('DEMO-008', 'GP-DEMO-GIS-V1-008', 'GeoPulse Demo Soil Sensor DEMO-008')
+                           )
+                           AND r.validation_notes LIKE seed_key || ' | reading | %'
                     )
                 )
-            AND NOT (c.model_name = 'GeoPulse Demo Crop Model' AND c.model_version = '1.0-demo')
+            AND (
+                c.model_name IS DISTINCT FROM 'GeoPulse Demo Crop Model'
+                OR c.model_version IS DISTINCT FROM '1.0-demo'
+            )
      ) THEN
          RAISE EXCEPTION 'Rollback stopped: a non-demo crop prediction references demo data.';
      END IF;
@@ -953,20 +1060,61 @@ COMMIT;
                           FROM sensor_devices d
                           JOIN farms f ON f.id = d.farm_id
                          WHERE f.description = seed_key || ' | farm'
+                           AND (d.sensor_code, d.serial_number, d.device_name) IN (
+                               ('DEMO-001', 'GP-DEMO-GIS-V1-001', 'GeoPulse Demo Soil Sensor DEMO-001'),
+                               ('DEMO-002', 'GP-DEMO-GIS-V1-002', 'GeoPulse Demo Soil Sensor DEMO-002'),
+                               ('DEMO-003', 'GP-DEMO-GIS-V1-003', 'GeoPulse Demo Soil Sensor DEMO-003'),
+                               ('DEMO-004', 'GP-DEMO-GIS-V1-004', 'GeoPulse Demo Soil Sensor DEMO-004'),
+                               ('DEMO-005', 'GP-DEMO-GIS-V1-005', 'GeoPulse Demo Soil Sensor DEMO-005'),
+                               ('DEMO-006', 'GP-DEMO-GIS-V1-006', 'GeoPulse Demo Soil Sensor DEMO-006'),
+                               ('DEMO-007', 'GP-DEMO-GIS-V1-007', 'GeoPulse Demo Soil Sensor DEMO-007'),
+                               ('DEMO-008', 'GP-DEMO-GIS-V1-008', 'GeoPulse Demo Soil Sensor DEMO-008')
+                           )
                     )
                  OR fp.reading_id IN (
                         SELECT r.id
                           FROM sensor_readings r
-                         WHERE r.validation_notes LIKE seed_key || ' | reading | %'
+                          JOIN sensor_devices d ON d.id = r.sensor_id
+                          JOIN farms f ON f.id = d.farm_id
+                         WHERE f.description = seed_key || ' | farm'
+                           AND (d.sensor_code, d.serial_number, d.device_name) IN (
+                               ('DEMO-001', 'GP-DEMO-GIS-V1-001', 'GeoPulse Demo Soil Sensor DEMO-001'),
+                               ('DEMO-002', 'GP-DEMO-GIS-V1-002', 'GeoPulse Demo Soil Sensor DEMO-002'),
+                               ('DEMO-003', 'GP-DEMO-GIS-V1-003', 'GeoPulse Demo Soil Sensor DEMO-003'),
+                               ('DEMO-004', 'GP-DEMO-GIS-V1-004', 'GeoPulse Demo Soil Sensor DEMO-004'),
+                               ('DEMO-005', 'GP-DEMO-GIS-V1-005', 'GeoPulse Demo Soil Sensor DEMO-005'),
+                               ('DEMO-006', 'GP-DEMO-GIS-V1-006', 'GeoPulse Demo Soil Sensor DEMO-006'),
+                               ('DEMO-007', 'GP-DEMO-GIS-V1-007', 'GeoPulse Demo Soil Sensor DEMO-007'),
+                               ('DEMO-008', 'GP-DEMO-GIS-V1-008', 'GeoPulse Demo Soil Sensor DEMO-008')
+                           )
+                           AND r.validation_notes LIKE seed_key || ' | reading | %'
                     )
                  OR fp.crop_prediction_id IN (
                         SELECT c.id
                           FROM crop_predictions c
-                         WHERE c.model_name = 'GeoPulse Demo Crop Model'
+                          JOIN sensor_devices d ON d.id = c.sensor_id
+                          JOIN sensor_readings r ON r.id = c.reading_id AND r.sensor_id = d.id
+                          JOIN farms f ON f.id = c.farm_id AND f.id = d.farm_id
+                         WHERE f.description = seed_key || ' | farm'
+                           AND (d.sensor_code, d.serial_number, d.device_name) IN (
+                               ('DEMO-001', 'GP-DEMO-GIS-V1-001', 'GeoPulse Demo Soil Sensor DEMO-001'),
+                               ('DEMO-002', 'GP-DEMO-GIS-V1-002', 'GeoPulse Demo Soil Sensor DEMO-002'),
+                               ('DEMO-003', 'GP-DEMO-GIS-V1-003', 'GeoPulse Demo Soil Sensor DEMO-003'),
+                               ('DEMO-004', 'GP-DEMO-GIS-V1-004', 'GeoPulse Demo Soil Sensor DEMO-004'),
+                               ('DEMO-005', 'GP-DEMO-GIS-V1-005', 'GeoPulse Demo Soil Sensor DEMO-005'),
+                               ('DEMO-006', 'GP-DEMO-GIS-V1-006', 'GeoPulse Demo Soil Sensor DEMO-006'),
+                               ('DEMO-007', 'GP-DEMO-GIS-V1-007', 'GeoPulse Demo Soil Sensor DEMO-007'),
+                               ('DEMO-008', 'GP-DEMO-GIS-V1-008', 'GeoPulse Demo Soil Sensor DEMO-008')
+                           )
+                           AND r.validation_notes LIKE seed_key || ' | reading | %'
+                           AND c.model_name = 'GeoPulse Demo Crop Model'
                            AND c.model_version = '1.0-demo'
                     )
                 )
-            AND NOT (fp.model_name = 'GeoPulse Demo Fertilizer Model' AND fp.model_version = '1.0-demo')
+            AND (
+                fp.model_name IS DISTINCT FROM 'GeoPulse Demo Fertilizer Model'
+                OR fp.model_version IS DISTINCT FROM '1.0-demo'
+            )
      ) THEN
          RAISE EXCEPTION 'Rollback stopped: a non-demo fertilizer prediction references demo data.';
      END IF;
@@ -981,7 +1129,23 @@ COMMIT;
                      WHERE f.description = seed_key || ' | farm'
                        AND z.description LIKE seed_key || ' | zone | %'
                 )
-            AND d.sensor_code NOT IN ('DEMO-001', 'DEMO-002', 'DEMO-003', 'DEMO-004', 'DEMO-005', 'DEMO-006', 'DEMO-007', 'DEMO-008')
+            AND NOT EXISTS (
+                SELECT 1
+                  FROM (
+                        VALUES
+                            ('DEMO-001'::text, 'GP-DEMO-GIS-V1-001'::text, 'GeoPulse Demo Soil Sensor DEMO-001'::text),
+                            ('DEMO-002', 'GP-DEMO-GIS-V1-002', 'GeoPulse Demo Soil Sensor DEMO-002'),
+                            ('DEMO-003', 'GP-DEMO-GIS-V1-003', 'GeoPulse Demo Soil Sensor DEMO-003'),
+                            ('DEMO-004', 'GP-DEMO-GIS-V1-004', 'GeoPulse Demo Soil Sensor DEMO-004'),
+                            ('DEMO-005', 'GP-DEMO-GIS-V1-005', 'GeoPulse Demo Soil Sensor DEMO-005'),
+                            ('DEMO-006', 'GP-DEMO-GIS-V1-006', 'GeoPulse Demo Soil Sensor DEMO-006'),
+                            ('DEMO-007', 'GP-DEMO-GIS-V1-007', 'GeoPulse Demo Soil Sensor DEMO-007'),
+                            ('DEMO-008', 'GP-DEMO-GIS-V1-008', 'GeoPulse Demo Soil Sensor DEMO-008')
+                  ) AS expected(sensor_code, serial_number, device_name)
+                 WHERE d.sensor_code = expected.sensor_code
+                   AND d.serial_number = expected.serial_number
+                   AND d.device_name = expected.device_name
+            )
      ) THEN
          RAISE EXCEPTION 'Rollback stopped: a non-demo device is assigned to a demo zone.';
      END IF;
@@ -990,7 +1154,17 @@ COMMIT;
          SELECT 1
            FROM zones z
           WHERE z.farm_id IN (SELECT id FROM farms WHERE description = seed_key || ' | farm')
-            AND z.description NOT LIKE seed_key || ' | zone | %'
+            AND NOT EXISTS (
+                SELECT 1
+                  FROM (
+                        VALUES
+                            ('GeoPulse demo GIS seed v1 | zone | Demo Zone A — Tomato'::text),
+                            ('GeoPulse demo GIS seed v1 | zone | Demo Zone B — Eggplant'),
+                            ('GeoPulse demo GIS seed v1 | zone | Demo Zone C — Cabbage'),
+                            ('GeoPulse demo GIS seed v1 | zone | Demo Zone D — Pechay')
+                  ) AS expected(description)
+                 WHERE z.description = expected.description
+            )
      ) THEN
          RAISE EXCEPTION 'Rollback stopped: a non-demo zone belongs to the demo farm.';
      END IF;
@@ -999,19 +1173,107 @@ COMMIT;
          SELECT 1
            FROM sensor_devices d
           WHERE d.farm_id IN (SELECT id FROM farms WHERE description = seed_key || ' | farm')
-            AND d.sensor_code NOT IN ('DEMO-001', 'DEMO-002', 'DEMO-003', 'DEMO-004', 'DEMO-005', 'DEMO-006', 'DEMO-007', 'DEMO-008')
+            AND NOT EXISTS (
+                SELECT 1
+                  FROM (
+                        VALUES
+                            ('DEMO-001'::text, 'GP-DEMO-GIS-V1-001'::text, 'GeoPulse Demo Soil Sensor DEMO-001'::text),
+                            ('DEMO-002', 'GP-DEMO-GIS-V1-002', 'GeoPulse Demo Soil Sensor DEMO-002'),
+                            ('DEMO-003', 'GP-DEMO-GIS-V1-003', 'GeoPulse Demo Soil Sensor DEMO-003'),
+                            ('DEMO-004', 'GP-DEMO-GIS-V1-004', 'GeoPulse Demo Soil Sensor DEMO-004'),
+                            ('DEMO-005', 'GP-DEMO-GIS-V1-005', 'GeoPulse Demo Soil Sensor DEMO-005'),
+                            ('DEMO-006', 'GP-DEMO-GIS-V1-006', 'GeoPulse Demo Soil Sensor DEMO-006'),
+                            ('DEMO-007', 'GP-DEMO-GIS-V1-007', 'GeoPulse Demo Soil Sensor DEMO-007'),
+                            ('DEMO-008', 'GP-DEMO-GIS-V1-008', 'GeoPulse Demo Soil Sensor DEMO-008')
+                  ) AS expected(sensor_code, serial_number, device_name)
+                 WHERE d.sensor_code = expected.sensor_code
+                   AND d.serial_number = expected.serial_number
+                   AND d.device_name = expected.device_name
+            )
      ) THEN
          RAISE EXCEPTION 'Rollback stopped: a non-demo device belongs to the demo farm.';
      END IF;
  END $$;
 
- DELETE FROM fertilizer_predictions
-  WHERE model_name = 'GeoPulse Demo Fertilizer Model'
-    AND model_version = '1.0-demo';
+ WITH demo_farm AS (
+     SELECT id
+       FROM farms
+      WHERE farm_name = 'GeoPulse Demo Farm'
+        AND description = 'GeoPulse demo GIS seed v1 | farm'
+ ),
+ demo_devices AS (
+     SELECT d.id, d.farm_id
+       FROM sensor_devices d
+       JOIN demo_farm f ON f.id = d.farm_id
+      WHERE (d.sensor_code, d.serial_number, d.device_name) IN (
+          ('DEMO-001', 'GP-DEMO-GIS-V1-001', 'GeoPulse Demo Soil Sensor DEMO-001'),
+          ('DEMO-002', 'GP-DEMO-GIS-V1-002', 'GeoPulse Demo Soil Sensor DEMO-002'),
+          ('DEMO-003', 'GP-DEMO-GIS-V1-003', 'GeoPulse Demo Soil Sensor DEMO-003'),
+          ('DEMO-004', 'GP-DEMO-GIS-V1-004', 'GeoPulse Demo Soil Sensor DEMO-004'),
+          ('DEMO-005', 'GP-DEMO-GIS-V1-005', 'GeoPulse Demo Soil Sensor DEMO-005'),
+          ('DEMO-006', 'GP-DEMO-GIS-V1-006', 'GeoPulse Demo Soil Sensor DEMO-006'),
+          ('DEMO-007', 'GP-DEMO-GIS-V1-007', 'GeoPulse Demo Soil Sensor DEMO-007'),
+          ('DEMO-008', 'GP-DEMO-GIS-V1-008', 'GeoPulse Demo Soil Sensor DEMO-008')
+      )
+ ),
+ demo_readings AS (
+     SELECT r.id, r.sensor_id
+       FROM sensor_readings r
+       JOIN demo_devices d ON d.id = r.sensor_id
+      WHERE r.validation_notes LIKE 'GeoPulse demo GIS seed v1 | reading | %'
+ ),
+ demo_crops AS (
+     SELECT c.id, c.reading_id, c.sensor_id, c.farm_id
+       FROM crop_predictions c
+       JOIN demo_readings r ON r.id = c.reading_id
+       JOIN demo_devices d ON d.id = c.sensor_id
+      WHERE c.farm_id = d.farm_id
+        AND c.model_name = 'GeoPulse Demo Crop Model'
+        AND c.model_version = '1.0-demo'
+ )
+ DELETE FROM fertilizer_predictions fp
+ USING demo_crops c
+ WHERE fp.crop_prediction_id = c.id
+   AND fp.reading_id = c.reading_id
+   AND fp.sensor_id = c.sensor_id
+   AND fp.farm_id = c.farm_id
+   AND fp.model_name = 'GeoPulse Demo Fertilizer Model'
+   AND fp.model_version = '1.0-demo';
 
- DELETE FROM crop_predictions
-  WHERE model_name = 'GeoPulse Demo Crop Model'
-    AND model_version = '1.0-demo';
+ WITH demo_farm AS (
+     SELECT id
+       FROM farms
+      WHERE farm_name = 'GeoPulse Demo Farm'
+        AND description = 'GeoPulse demo GIS seed v1 | farm'
+ ),
+ demo_devices AS (
+     SELECT d.id, d.farm_id
+       FROM sensor_devices d
+       JOIN demo_farm f ON f.id = d.farm_id
+      WHERE (d.sensor_code, d.serial_number, d.device_name) IN (
+          ('DEMO-001', 'GP-DEMO-GIS-V1-001', 'GeoPulse Demo Soil Sensor DEMO-001'),
+          ('DEMO-002', 'GP-DEMO-GIS-V1-002', 'GeoPulse Demo Soil Sensor DEMO-002'),
+          ('DEMO-003', 'GP-DEMO-GIS-V1-003', 'GeoPulse Demo Soil Sensor DEMO-003'),
+          ('DEMO-004', 'GP-DEMO-GIS-V1-004', 'GeoPulse Demo Soil Sensor DEMO-004'),
+          ('DEMO-005', 'GP-DEMO-GIS-V1-005', 'GeoPulse Demo Soil Sensor DEMO-005'),
+          ('DEMO-006', 'GP-DEMO-GIS-V1-006', 'GeoPulse Demo Soil Sensor DEMO-006'),
+          ('DEMO-007', 'GP-DEMO-GIS-V1-007', 'GeoPulse Demo Soil Sensor DEMO-007'),
+          ('DEMO-008', 'GP-DEMO-GIS-V1-008', 'GeoPulse Demo Soil Sensor DEMO-008')
+      )
+ ),
+ demo_readings AS (
+     SELECT r.id, r.sensor_id
+       FROM sensor_readings r
+       JOIN demo_devices d ON d.id = r.sensor_id
+      WHERE r.validation_notes LIKE 'GeoPulse demo GIS seed v1 | reading | %'
+ )
+ DELETE FROM crop_predictions c
+ USING demo_devices d, demo_readings r
+ WHERE c.sensor_id = d.id
+   AND c.reading_id = r.id
+   AND c.farm_id = d.farm_id
+   AND c.model_name = 'GeoPulse Demo Crop Model'
+   AND c.model_version = '1.0-demo';
 
  DELETE FROM alerts
   WHERE message LIKE 'GeoPulse demo GIS seed v1 | alert | %';
