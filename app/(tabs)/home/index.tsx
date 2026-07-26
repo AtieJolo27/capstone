@@ -1,38 +1,25 @@
-import { Ionicons } from '@expo/vector-icons';
+import { DashboardSkeleton } from '@/app/components/LoadingSkeleton';
 import { useApp } from '@/app/lib/AppContext';
 import { useThemeColors } from '@/app/lib/useThemeColors';
-import { DashboardSkeleton } from '@/app/components/LoadingSkeleton';
 import { computeSoilHealthScore } from '@/lib/soilHealthScore';
-import React, { useCallback, useEffect, useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Modal,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
 import * as Progress from 'react-native-progress';
+import { CACHE_KEYS, getCache, setCache } from '../../../lib/cache';
+import { lightHaptic, mediumHaptic, warningHaptic } from '../../../lib/haptics';
 import { supabase } from '../../../lib/supabaseClient';
 import Urgent_Card from '../../components/UrgentCard';
-import { setCache, getCache, CACHE_KEYS } from '../../../lib/cache';
-import { lightHaptic, mediumHaptic, warningHaptic } from '../../../lib/haptics';
-
-type ZoneKey = 'A' | 'B' | 'C';
-
-const ZONES: { key: ZoneKey; labelEn: string; labelTl: string }[] = [
-  { key: 'A', labelEn: 'Zone A', labelTl: 'Sona A' },
-  { key: 'B', labelEn: 'Zone B', labelTl: 'Sona B' },
-  { key: 'C', labelEn: 'Zone C', labelTl: 'Sona C' },
-];
-
-const ZONE_LABELS: Record<ZoneKey, { en: string; tl: string }> = {
-  A: { en: 'Zone A - Rice Field', tl: 'Sona A - Palayan' },
-  B: { en: 'Zone B - Vegetable Plot', tl: 'Sona B - Gulayan' },
-  C: { en: 'Zone C - Orchard', tl: 'Sona C - Punuan' },
-};
 
 const OPTIMAL_RANGES = {
   soil_moisture: { min: 70, max: 75, unit: '%' },
@@ -42,6 +29,18 @@ const OPTIMAL_RANGES = {
   phosphorus: { min: 10, max: 30, unit: 'ppm' },
   potassium: { min: 100, max: 200, unit: 'ppm' },
 } as const;
+
+interface SensorReading {
+  id?: string | number;
+  created_at?: string;
+  soil_moisture?: number | string;
+  soil_temperature?: number | string;
+  ph?: number | string;
+  nitrogen?: number | string;
+  phosphorus?: number | string;
+  potassium?: number | string;
+  [key: string]: any;
+}
 
 interface SensorAlert {
   field: string;
@@ -53,7 +52,25 @@ interface SensorAlert {
   severity: 'high' | 'medium' | 'low';
 }
 
-function computeAlerts(record: any): SensorAlert[] {
+interface Zone {
+  key: string;
+  labelEn: string;
+  labelTl: string;
+}
+
+function getTimeAgo(date: Date, now: Date): { en: string; tl: string } {
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return { en: 'Just now', tl: 'Ngayon lang' };
+  if (diffMins < 60) return { en: `${diffMins} min ago`, tl: `${diffMins} minuto ang nakalipas` };
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return { en: `${diffHours} hr ago`, tl: `${diffHours} oras ang nakalipas` };
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays === 1) return { en: '1 day ago', tl: '1 araw ang nakalipas' };
+  return { en: `${diffDays} days ago`, tl: `${diffDays} araw ang nakalipas` };
+}
+
+function computeAlerts(record: SensorReading | null): SensorAlert[] {
   if (!record) return [];
 
   const alerts: SensorAlert[] = [];
@@ -61,8 +78,7 @@ function computeAlerts(record: any): SensorAlert[] {
   const recordDate = record.created_at ? new Date(record.created_at) : now;
   const timeAgo = getTimeAgo(recordDate, now);
 
-  // Check soil temperature
-  const temp = parseFloat(record.soil_temperature);
+  const temp = parseFloat(String(record.soil_temperature));
   if (!isNaN(temp)) {
     if (temp > OPTIMAL_RANGES.soil_temperature.max + 5) {
       alerts.push({
@@ -87,8 +103,7 @@ function computeAlerts(record: any): SensorAlert[] {
     }
   }
 
-  // Check soil moisture
-  const moisture = parseFloat(record.soil_moisture);
+  const moisture = parseFloat(String(record.soil_moisture));
   if (!isNaN(moisture)) {
     if (moisture < OPTIMAL_RANGES.soil_moisture.min - 10) {
       alerts.push({
@@ -113,8 +128,7 @@ function computeAlerts(record: any): SensorAlert[] {
     }
   }
 
-  // Check pH
-  const ph = parseFloat(record.ph);
+  const ph = parseFloat(String(record.ph));
   if (!isNaN(ph)) {
     if (ph < OPTIMAL_RANGES.ph.min - 0.5) {
       alerts.push({
@@ -142,22 +156,13 @@ function computeAlerts(record: any): SensorAlert[] {
   return alerts;
 }
 
-function getTimeAgo(date: Date, now: Date): { en: string; tl: string } {
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  if (diffMins < 1) return { en: 'Just now', tl: 'Ngayon lang' };
-  if (diffMins < 60) return { en: `${diffMins} min ago`, tl: `${diffMins} minuto ang nakalipas` };
-  const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return { en: `${diffHours} hr ago`, tl: `${diffHours} oras ang nakalipas` };
-  const diffDays = Math.floor(diffHours / 24);
-  if (diffDays === 1) return { en: '1 day ago', tl: '1 araw ang nakalipas' };
-  return { en: `${diffDays} days ago`, tl: `${diffDays} araw ang nakalipas` };
-}
-
-function computeHealthScore(record: any): { score: number; breakdown: { label: string; score: number; max: number }[]; interpretation?: { en: string; tl: string } } {
+function computeHealthScore(record: SensorReading | null): { 
+  score: number; 
+  breakdown: { label: string; score: number; max: number }[]; 
+  interpretation?: { en: string; tl: string } 
+} {
   if (!record) return { score: 0, breakdown: [] };
 
-  // Use the scientific formula from lib/soilHealthScore.ts
   const result = computeSoilHealthScore(record);
 
   const breakdown = result.factors.map((f) => ({
@@ -179,18 +184,31 @@ export default function index() {
   const fs = (size: number) => Math.round(size * fontScale);
 
   const [modalVisible, setModalVisibility] = useState(false);
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<SensorReading[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedZone, setSelectedZone] = useState<ZoneKey>('A');
+  const [selectedZone, setSelectedZone] = useState<string>('A');
+  const [zones, setZones] = useState<Zone[]>([
+    { key: 'A', labelEn: 'Zone A', labelTl: 'Sona A' },
+  ]);
+  const [newZoneNameEn, setNewZoneNameEn] = useState('');
+  const [newZoneNameTl, setNewZoneNameTl] = useState('');
+  const [addZoneModalVisible, setAddZoneModalVisible] = useState(false);
+
+  const generateNewZoneKey = useCallback((): string => {
+    const len = zones.length;
+    if (len < 26) {
+      return String.fromCharCode(65 + len);
+    }
+    return `Z${len - 25}`;
+  }, [zones.length]);
 
   const fetchData = useCallback(async () => {
     try {
       setError(null);
 
-      // Try cache first
-      const cached = await getCache<any[]>(CACHE_KEYS.SENSOR_READINGS);
+      const cached = await getCache<SensorReading[]>(CACHE_KEYS.SENSOR_READINGS);
       if (cached && cached.length > 0) {
         setData(cached);
         setLoading(false);
@@ -205,7 +223,7 @@ export default function index() {
         throw new Error(fetchError.message);
       }
 
-      const orderedData = (fetchedData ?? []).reverse();
+      const orderedData = fetchedData ?? [];
       setData(orderedData);
 
       if (orderedData.length > 0) {
@@ -215,7 +233,7 @@ export default function index() {
       console.warn('fetchData error:', err);
       setError(err.message || 'Failed to fetch sensor data');
       if (data.length === 0) {
-        const cached = await getCache<any[]>(CACHE_KEYS.SENSOR_READINGS);
+        const cached = await getCache<SensorReading[]>(CACHE_KEYS.SENSOR_READINGS);
         if (cached) {
           setData(cached);
         }
@@ -224,7 +242,7 @@ export default function index() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [data.length]);
 
   useEffect(() => {
     fetchData();
@@ -251,35 +269,29 @@ export default function index() {
     fetchData();
   }, [fetchData]);
 
-  const latestRecord = data.length > 0
-    ? data.reduce((latest, curr) =>
-        new Date(curr.created_at) > new Date(latest.created_at) ? curr : latest
-      )
-    : null;
+  const latestRecord = useMemo(() => {
+    return data.length > 0 ? data[0] : null;
+  }, [data]);
 
-  const getSensorValue = (field: string, defaultValue: string = '--') => {
+  const getSensorValue = useCallback((field: keyof SensorReading, defaultValue: string = '--') => {
     if (!latestRecord) return defaultValue;
     const value = latestRecord[field];
     return value !== undefined && value !== null ? String(value) : defaultValue;
-  };
+  }, [latestRecord]);
 
-  const getProgressValue = (value: any, maxValue: number): number => {
+  const getProgressValue = useCallback((value: any, maxValue: number): number => {
     if (value === null || value === undefined) return 0;
     const numValue = parseFloat(String(value));
     return isNaN(numValue) ? 0 : Math.min(numValue / maxValue, 1);
-  };
+  }, []);
 
-  // Compute dynamic alerts from actual sensor data
-  const alerts = computeAlerts(latestRecord);
-  // Compute dynamic health score
-  const healthInfo = computeHealthScore(latestRecord);
+  const alerts = useMemo(() => computeAlerts(latestRecord), [latestRecord]);
+  const healthInfo = useMemo(() => computeHealthScore(latestRecord), [latestRecord]);
 
-  // If initial loading, show skeleton
   if (loading && data.length === 0) {
     return <DashboardSkeleton />;
   }
 
-  // If error and no data at all, show error state
   if (error && data.length === 0) {
     return (
       <View className="flex-1 items-center justify-center px-6" style={{ backgroundColor: colors.bg }}>
@@ -303,7 +315,9 @@ export default function index() {
     );
   }
 
-  const zoneLabel = ZONE_LABELS[selectedZone];
+  const zoneObj = zones.find(z => z.key === selectedZone);
+  const zoneLabelEn = zoneObj?.labelEn ?? 'Zone';
+  const zoneLabelTl = zoneObj?.labelTl ?? 'Sona';
   const totalAlerts = alerts.length;
 
   return (
@@ -327,42 +341,58 @@ export default function index() {
             {t('FIELD ZONES', 'SONA NG LARANGAN')}
           </Text>
         </View>
-        <View className="flex flex-row justify-between gap-2 mt-4">
-          {ZONES.map((zone) => {
-            const isActive = selectedZone === zone.key;
-            return (
-              <TouchableOpacity
-                key={zone.key}
-                onPress={() => {
-                  lightHaptic();
-                  setSelectedZone(zone.key);
-                }}
-                className="w-1/3 border rounded-2xl h-13 p-4"
-                style={{
-                  backgroundColor: isActive ? '#16A34A' : colors.isDarkMode ? '#1A3522' : '#DCFCE7',
-                  borderColor: isActive ? '#16A34A' : colors.border,
-                  shadowColor: isActive ? '#16A34A' : 'transparent',
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: isActive ? 0.3 : 0,
-                  shadowRadius: 4,
-                  elevation: isActive ? 4 : 0,
-                }}
-                accessibilityRole="button"
-                accessibilityLabel={t(`Select ${zone.labelEn}`, `Piliin ang ${zone.labelTl}`)}
+        <ScrollView horizontal={true} showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: 'row', justifyContent: 'space-between', gap: 2 }}>
+          {zones.map((zone) => (
+            <TouchableOpacity
+              key={zone.key}
+              onPress={() => {
+                lightHaptic();
+                setSelectedZone(zone.key);
+              }}
+              className="border rounded-2xl h-13 p-4"
+              style={{
+                width: 80,
+                backgroundColor: selectedZone === zone.key ? '#16A34A' : colors.isDarkMode ? '#1A3522' : '#DCFCE7',
+                borderColor: selectedZone === zone.key ? '#16A34A' : colors.border,
+                shadowColor: selectedZone === zone.key ? '#16A34A' : 'transparent',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: selectedZone === zone.key ? 0.3 : 0,
+                shadowRadius: 4,
+                elevation: selectedZone === zone.key ? 4 : 0,
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={t(`Select ${zone.labelEn}`, `Piliin ang ${zone.labelTl}`)}
+            >
+              <Text
+                style={{ fontSize: fs(16), fontWeight: 'bold', textAlign: 'center', color: selectedZone === zone.key ? 'white' : colors.text }}
               >
-                <Text
-                  style={{ fontSize: fs(16), fontWeight: 'bold', textAlign: 'center', color: isActive ? 'white' : colors.text }}
-                >
-                  {t(zone.labelEn, zone.labelTl)}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+                {t(zone.labelEn, zone.labelTl)}
+              </Text>
+            </TouchableOpacity>
+          ))}
+          <TouchableOpacity
+            onPress={() => {
+              lightHaptic();
+              setNewZoneNameEn('');
+              setNewZoneNameTl('');
+              setAddZoneModalVisible(true);
+            }}
+            className="border rounded-2xl h-13 p-4"
+            style={{
+              width: 80,
+              backgroundColor: colors.isDarkMode ? '#1A3522' : '#DCFCE7',
+              borderColor: colors.border,
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={t('Add zone', 'Magdagdag na zona')}
+          >
+            <Ionicons name="add" size={24} color={colors.primary} />
+          </TouchableOpacity>
+        </ScrollView>
 
         <View className="my-2">
           <Text style={{ fontSize: fs(16), fontWeight: 'bold', marginTop: 16, color: colors.subText }}>
-            {t(zoneLabel.en, zoneLabel.tl)}
+            {t(zoneLabelEn, zoneLabelTl)}
           </Text>
         </View>
 
@@ -518,7 +548,7 @@ export default function index() {
         </View>
       </View>
 
-      {/* Urgent Notifications — Dynamic from sensor data */}
+      {/* Urgent Notifications */}
       <View>
         <View className="my-2 flex-row items-center justify-between">
           <Text style={{ fontSize: fs(18), fontWeight: 'bold', color: colors.greenText }}>
@@ -650,6 +680,115 @@ export default function index() {
           </View>
         </View>
       </Modal>
+
+      {/* Add Zone Modal */}
+      <Modal visible={addZoneModalVisible} transparent animationType="fade">
+        <View
+          style={{
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            flex: 1,
+            padding: 20,
+            justifyContent: 'center',
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: colors.cardBg,
+              borderRadius: 20,
+              padding: 24,
+              shadowColor: colors.primary,
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.15,
+              shadowRadius: 12,
+              elevation: 8,
+            }}
+          >
+            <TouchableOpacity
+              onPress={() => {
+                mediumHaptic();
+                setAddZoneModalVisible(false);
+              }}
+              style={{ alignSelf: 'flex-end' }}
+              accessibilityRole="button"
+              accessibilityLabel={t('Close', 'Isara')}
+            >
+              <Ionicons name="close-circle" size={28} color={colors.primary} />
+            </TouchableOpacity>
+            <View className="flex-row items-center mb-4 mt-2">
+              <View className="w-10 h-10 rounded-full items-center justify-center mr-3" style={{ backgroundColor: colors.cardBgAlt }}>
+                <Ionicons name="add-circle" size={20} color={colors.primary} />
+              </View>
+              <Text
+                style={{
+                  color: colors.text,
+                  fontSize: 18,
+                  fontWeight: 'bold',
+                }}
+              >
+                {t('Add New Zone', 'Magdagdag na Bagong Zona')}
+              </Text>
+            </View>
+
+            <View className="mt-4">
+              <Text style={{ color: colors.subText, fontSize: 14 }}>{t('Zone Name (English)', 'Pangalan ng Zona (Ingles)')}</Text>
+              <TextInput
+                placeholder={t('Enter zone name in English', 'Ilagay ang pangalan ng zona sa Ingles')}
+                value={newZoneNameEn}
+                onChangeText={text => setNewZoneNameEn(text)}
+                style={{
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  borderRadius: 8,
+                  padding: 12,
+                  fontSize: 16,
+                  backgroundColor: colors.inputBg,
+                  color: colors.text,
+                }}
+              />
+            </View>
+
+            <View className="mt-4">
+              <Text style={{ color: colors.subText, fontSize: 14 }}>{t('Zone Name (Tagalog)', 'Pangalan ng Zona (Tagalog)')}</Text>
+              <TextInput
+                placeholder={t('Enter zone name in Tagalog', 'Ilagay ang pangalan ng zona sa Tagalog')}
+                value={newZoneNameTl}
+                onChangeText={text => setNewZoneNameTl(text)}
+                style={{
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  borderRadius: 8,
+                  padding: 12,
+                  fontSize: 16,
+                  backgroundColor: colors.inputBg,
+                  color: colors.text,
+                }}
+              />
+            </View>
+
+            <TouchableOpacity
+              onPress={() => {
+                if (newZoneNameEn.trim() === '' || newZoneNameTl.trim() === '') {
+                  warningHaptic();
+                  return;
+                }
+                mediumHaptic();
+                const newKey = generateNewZoneKey();
+                setZones(prev => [...prev, { key: newKey, labelEn: newZoneNameEn.trim(), labelTl: newZoneNameTl.trim() }]);
+                setSelectedZone(newKey);
+                setNewZoneNameEn('');
+                setNewZoneNameTl('');
+                setAddZoneModalVisible(false);
+              }}
+              className="mt-6 rounded-xl py-3 px-8"
+              style={{ backgroundColor: colors.primary }}
+            >
+              <Text className="font-bold" style={{ color: '#F0FDF4' }}>
+                {t('Save', 'I-save')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -720,4 +859,3 @@ function SensorCard({
 }
 
 const styles = StyleSheet.create({});
-

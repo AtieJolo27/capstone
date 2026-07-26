@@ -11,7 +11,7 @@ export const unstable_settings = {
 export default function FeedLayout() {
   return (
   <Stack screenOptions={{
-      headerTitle:"GeoPulse2",
+      headerTitle:"GeoPulse",
       headerTitleStyle: { fontWeight: 'bold', fontSize: 20, color: '#F0FDF4' },
       headerStyle: { backgroundColor: '#0D5E33' },
       headerTintColor: '#F0FDF4',

@@ -44,14 +44,21 @@ export default function RootLayout() {
             <Ionicons name="leaf-outline" color={color} size={size} />
         }}
         />
-        <Tabs.Screen name="fertilizer"
+      <Tabs.Screen name="fertilizer"
         options={{
           title: "Fertilizers",
           tabBarIcon: ({color, size}) =>
             <Ionicons name="checkmark-circle-outline" color={color} size={size} />
         }}
         />
-        <Tabs.Screen name="history"
+      <Tabs.Screen name="irrigation"
+        options={{
+          title: "Irrigation",
+          tabBarIcon: ({color, size}) =>
+            <Ionicons name="water-outline" color={color} size={size} />
+        }}
+        />
+      <Tabs.Screen name="history"
         options={{
           title: "History",
           tabBarIcon: ({color, size}) =>

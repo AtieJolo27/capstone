@@ -12,7 +12,7 @@ export default function HomeLayout () {
     <Stack screenOptions={{
       headerTitle:"GeoPulse",
       headerTitleStyle: { fontWeight: 'bold', fontSize: 20, color: 'white' },
-      headerStyle: { backgroundColor: '#184B44' },
+      headerStyle: { backgroundColor: '#0D5E33' },
       headerRight: () => (
           <TouchableOpacity onPress={() => router.push('/profile')}>
             <Ionicons name="person-circle-outline" size={24} color="white" />

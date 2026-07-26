@@ -1,12 +1,12 @@
 import BestCrop from '@/app/components/BestCrop';
 import Recommended_Crops from '@/app/components/RecommendedCrops';
+import { useApp } from '@/app/lib/AppContext';
 import { useThemeColors } from '@/app/lib/useThemeColors';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, Text, TouchableOpacity, View } from 'react-native';
-import { useApp } from '@/app/lib/AppContext';
+import { CACHE_KEYS, getCache, setCache } from '../../../lib/cache';
 import { supabase } from '../../../lib/supabaseClient';
-import { setCache, getCache, CACHE_KEYS } from '../../../lib/cache';
 
 interface CropRecommendation {
   crop: string;

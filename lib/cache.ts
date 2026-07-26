@@ -87,5 +87,5 @@ export const CACHE_KEYS = {
   CROP_PREDICTIONS: 'crop_predictions',
   FERTILIZER_PREDICTIONS: 'fertilizer_predictions',
   SOIL_HISTORY: 'soil_history',
+  IRRIGATION_RECOMMENDATIONS: 'irrigation_recommendations',
 } as const;
-
