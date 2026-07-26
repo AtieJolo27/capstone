@@ -1,0 +1,75 @@
+@import 'tailwindcss';
+
+@source '../views';
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+
+@theme {
+    --font-sans:
+        'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
+        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+        'Noto Color Emoji';
+}
+
+html {
+    background: #f8fafc;
+    scroll-behavior: smooth;
+}
+
+body {
+    min-width: 320px;
+    background: #f8fafc;
+    color: #0f172a;
+    text-rendering: optimizeLegibility;
+}
+
+::selection {
+    background: #d1fae5;
+    color: #064e3b;
+}
+
+:focus-visible {
+    outline: 2px solid #059669;
+    outline-offset: 3px;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+    -webkit-tap-highlight-color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+.sidebar-scroll {
+    scrollbar-color: #34d399 #0f3d28;
+    scrollbar-width: thin;
+}
+
+.sidebar-scroll::-webkit-scrollbar {
+    width: 8px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-track {
+    background: #0f3d28;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb {
+    background: #34d399;
+    border: 2px solid #0f3d28;
+    border-radius: 9999px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+    background: #6ee7b7;
+}
