@@ -1,7 +1,9 @@
+import { useApp } from '@/app/lib/AppContext';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Modal,
   ScrollView,
@@ -10,7 +12,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useApp } from '@/app/lib/AppContext';
 
 interface EditableField {
   icon: React.ComponentProps<typeof Ionicons>['name'];
@@ -57,7 +58,7 @@ const LANGUAGE_OPTIONS = [
 ];
 
 export default function ProfileScreen() {
-  const { isDarkMode, toggleTheme, language, setLanguage, t } = useApp();
+  const { isDarkMode, toggleTheme, language, setLanguage, t, user, login, logout, loading } = useApp();
 
   const [sections, setSections] = useState<Section[]>(DEFAULT_SECTIONS);
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -65,12 +66,17 @@ export default function ProfileScreen() {
   const [editingItem, setEditingItem] = useState<EditableField | null>(null);
   const [editValue, setEditValue] = useState('');
 
-  const [farmerName, setFarmerName] = useState('Juan Dela Cruz');
+  const [farmerName, setFarmerName] = useState(user?.user_metadata?.full_name ?? 'Juan Dela Cruz');
   const [farmerRole, setFarmerRole] = useState(t('Farmer', 'Magsasaka') + ' • Nueva Ecija');
   const [editNameVisible, setEditNameVisible] = useState(false);
   const [editNameValue, setEditNameValue] = useState(farmerName);
   const [editRoleValue, setEditRoleValue] = useState(farmerRole);
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
+
+  // Login form state
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   const handleOpenEdit = (section: Section, item: EditableField) => {
     setEditingSection(section);
@@ -152,35 +158,163 @@ export default function ProfileScreen() {
 
   const bgColor = isDarkMode ? '#111827' : '#F9FAFB';
   const cardBg = isDarkMode ? '#1F2937' : '#FFFFFF';
-  const textColor = isDarkMode ? '#F9FAFB' : '#1F2937';
-  const subTextColor = isDarkMode ? '#9CA3AF' : '#6B7280';
+  const textColor = isDarkMode ? '#9CA3AF' : '#1F2937';
+  const subTextColor = isDarkMode ? '#6B7280' : '#6B7280';
   const borderColor = isDarkMode ? '#374151' : '#E5E7EB';
   const headerBg = isDarkMode ? '#0F3D37' : '#184B44';
 
+  // If user is not logged in, show login form
+  if (!user) {
+    return (
+      <View className="flex-1" style={{ backgroundColor: bgColor }}>
+        {/* Header — no back button here on purpose; login is the auth gate */}
+        <View className="pt-12 pb-8 px-6 rounded-b-3xl" style={{ backgroundColor: headerBg }}>
+          <View className="flex-row items-center justify-between mb-4">
+            <View style={{ width: 24 }} />
+            <Text className="text-white font-bold text-lg">
+              {t('Login', 'Mag-login')}
+            </Text>
+            <TouchableOpacity onPress={() => alert(t('Settings', 'Settings'))}>
+              <Ionicons name="settings-outline" size={24} color="white" />
+            </TouchableOpacity>
+          </View>
+          <View className="items-center">
+            <View className="w-20 h-20 bg-white/20 rounded-full items-center justify-center mb-3 relative">
+              <Ionicons name="person" size={40} color="white" />
+            </View>
+            <Text className="text-white font-bold text-xl">
+              GeoPulse
+            </Text>
+          </View>
+        </View>
+
+        {/* Login Form */}
+        <ScrollView className="flex-1 px-4 -mt-4">
+          <View className="rounded-2xl p-4 mb-4 shadow-sm" style={{ backgroundColor: cardBg, borderColor: borderColor, borderWidth: 1 }}>
+            <Text className="text-gray-500 font-semibold text-sm uppercase tracking-wide mb-3">
+              {t('Welcome Back', 'Maligayang Pagbabalik')}
+            </Text>
+
+            {/* Email Input */}
+            <View className="mb-4">
+              <Text className="text-sm font-medium mb-2" style={{ color: textColor }}>
+                {t('Email', 'Email')}
+              </Text>
+              <TextInput
+                className="border border-gray-300 rounded-xl p-3 text-gray-800 text-base"
+                value={email}
+                onChangeText={setEmail}
+                placeholder={t('Enter your email', 'Ilagay ang iyong email')}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                autoComplete="email"
+              />
+            </View>
+
+            {/* Password Input */}
+            <View className="mb-4">
+              <Text className="text-sm font-medium mb-2" style={{ color: textColor }}>
+                {t('Password', 'Password')}
+              </Text>
+              <TextInput
+                className="border border-gray-300 rounded-xl p-3 text-gray-800 text-base"
+                value={password}
+                onChangeText={setPassword}
+                placeholder={t('Enter your password', 'Ilagay ang iyong password')}
+                secureTextEntry={true}
+                autoComplete="current-password"
+              />
+            </View>
+
+            {/* Error Message */}
+            {loginError && (
+              <View className="mb-3 p-3 bg-red-50 rounded-lg" style={{ borderColor: '#FECACA', borderWidth: 1 }}>
+                <Text className="text-sm font-medium text-red-600">
+                  {loginError}
+                </Text>
+              </View>
+            )}
+
+            {/* Login Button */}
+            <TouchableOpacity
+              onPress={async () => {
+                setLoginError(null);
+                try {
+                  await login(email, password);
+                  setEmail('');
+                  setPassword('');
+                  router.replace('/(tabs)/home');
+                } catch (error: any) {
+                  setLoginError(error.message ?? 'Login failed');
+                }
+              }}
+              className="flex-row items-center justify-center rounded-2xl p-4 mb-6"
+              style={{ backgroundColor: '#184B44' }}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color="white" style={{ marginRight: 8 }} />
+              ) : null}
+              <Text className="text-white font-semibold">
+                {t('Login', 'Mag-login')}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Divider */}
+            <View className="mb-4 flex-row items-center">
+              <View className="flex-1 h-0.5 bg-gray-200" />
+              <Text className="px-2 text-sm text-gray-500">
+                {t('Or', 'O')}
+              </Text>
+              <View className="flex-1 h-0.5 bg-gray-200" />
+            </View>
+
+            {/* Sign Up Link */}
+            <TouchableOpacity
+              onPress={() => {
+                Alert.alert(t('Sign Up', 'Sign Up'), t('Sign up feature coming soon.', 'Siguro na darating ang feature ng sign up.'));
+              }}
+              className="flex-row items-center justify-center"
+            >
+              <Text className="text-sm font-medium text-[#184B44]">
+                {t("Don't have an account? Sign up", "Walang account? Mag-sign up")}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </View>
+    );
+  }
+
+  // If user is logged in, show the profile screen
   return (
     <View className="flex-1" style={{ backgroundColor: bgColor }}>
       {/* Header */}
       <View className="pt-12 pb-8 px-6 rounded-b-3xl" style={{ backgroundColor: headerBg }}>
         <View className="flex-row items-center justify-between mb-4">
-          <TouchableOpacity onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color="white" />
-          </TouchableOpacity>
+          {router.canGoBack() ? (
+            <TouchableOpacity onPress={() => router.back()}>
+              <Ionicons name="arrow-back" size={24} color="white" />
+            </TouchableOpacity>
+          ) : (
+            <View style={{ width: 24 }} />
+          )}
           <Text className="text-white font-bold text-lg">
             {t('Profile', 'Profile')}
           </Text>
-          <TouchableOpacity onPress={() => alert(t('Settings', 'Settings'))}>
-            <Ionicons name="settings-outline" size={24} color="white" />
+          <TouchableOpacity onPress={async () => {
+            try {
+              await logout();
+            } catch (error) {
+              alert(t('Logout failed', 'Nabigo ang pag-logout'));
+            }
+          }}>
+            <Ionicons name="log-out-outline" size={24} color="white" />
           </TouchableOpacity>
         </View>
         <View className="items-center">
           <View className="w-20 h-20 bg-white/20 rounded-full items-center justify-center mb-3 relative">
             <Ionicons name="person" size={40} color="white" />
-            <TouchableOpacity
-              className="absolute bottom-0 right-0 bg-white rounded-full p-1 shadow-md"
-              onPress={() => alert(t('Change profile picture', 'Palitan ang larawan'))}
-            >
-              <Ionicons name="camera" size={14} color="#184B44" />
-            </TouchableOpacity>
           </View>
           <View className="flex-row items-center">
             <Text className="text-white font-bold text-xl">{farmerName}</Text>
@@ -205,7 +339,7 @@ export default function ProfileScreen() {
           <View
             key={sIndex}
             className="rounded-2xl p-4 mb-4 shadow-sm"
-            style={{ backgroundColor: cardBg, borderColor, borderWidth: 1 }}
+            style={{ backgroundColor: cardBg, borderColor: borderColor, borderWidth: 1 }}
           >
             <Text className="text-gray-500 font-semibold text-sm uppercase tracking-wide mb-3">
               {section.titleEn}
@@ -240,7 +374,7 @@ export default function ProfileScreen() {
         {/* Settings Section */}
         <View
           className="rounded-2xl p-4 mb-4 shadow-sm"
-          style={{ backgroundColor: cardBg, borderColor, borderWidth: 1 }}
+          style={{ backgroundColor: cardBg, borderColor: borderColor, borderWidth: 1 }}
         >
           <Text className="text-gray-500 font-semibold text-sm uppercase tracking-wide mb-3">
             {t('Settings', 'Settings')}
@@ -303,7 +437,7 @@ export default function ProfileScreen() {
         {/* Stats Card */}
         <View
           className="rounded-2xl p-4 mb-6 shadow-sm"
-          style={{ backgroundColor: cardBg, borderColor, borderWidth: 1 }}
+          style={{ backgroundColor: cardBg, borderColor: borderColor, borderWidth: 1 }}
         >
           <Text className="text-gray-500 font-semibold text-sm uppercase tracking-wide mb-3">
             {t('Account Statistics', 'Estadistika ng Account')}
@@ -329,18 +463,6 @@ export default function ProfileScreen() {
             </View>
           </View>
         </View>
-
-        {/* Logout */}
-        <TouchableOpacity
-          onPress={() => alert(t('Logout pressed', 'Nag-logout'))}
-          className="flex-row items-center justify-center rounded-2xl p-4 mb-8"
-          style={{ backgroundColor: cardBg, borderColor: '#FECACA', borderWidth: 1 }}
-        >
-          <Ionicons name="log-out-outline" size={20} color="#DC2626" />
-          <Text className="text-red-600 font-semibold ml-2">
-            {t('Logout', 'Logout')}
-          </Text>
-        </TouchableOpacity>
       </ScrollView>
 
       {/* Edit Field Modal */}
@@ -441,52 +563,6 @@ export default function ProfileScreen() {
           </View>
         </View>
       </Modal>
-
-      {/* Language Selection Modal */}
-      <Modal visible={languageModalVisible} transparent animationType="fade">
-        <View className="flex-1 bg-black/50 justify-center items-center px-6">
-          <View className="bg-white rounded-2xl w-full p-6">
-            <View className="flex-row items-center justify-between mb-4">
-              <Text className="text-lg font-bold text-gray-800">
-                {t('Select Language', 'Pumili ng Wika')}
-              </Text>
-              <TouchableOpacity onPress={() => setLanguageModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#9CA3AF" />
-              </TouchableOpacity>
-            </View>
-
-            {LANGUAGE_OPTIONS.map((option, index) => (
-              <TouchableOpacity
-                key={option.key}
-                onPress={() => handleLanguageSelect(option.key)}
-                className="flex-row items-center py-4 px-2"
-                style={{
-                  borderBottomWidth: index === LANGUAGE_OPTIONS.length - 1 ? 0 : 1,
-                  borderBottomColor: '#E5E7EB',
-                }}
-              >
-                <Ionicons
-                  name={option.icon}
-                  size={20}
-                  color={language === option.key ? '#184B44' : '#9CA3AF'}
-                />
-                <Text
-                  className="flex-1 ml-3 font-medium text-base"
-                  style={{
-                    color: language === option.key ? '#184B44' : '#4B5563',
-                  }}
-                >
-                  {option.label}
-                </Text>
-                {language === option.key && (
-                  <Ionicons name="checkmark-circle" size={22} color="#16A34A" />
-                )}
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
-

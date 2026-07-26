@@ -1,3 +1,5 @@
+import { supabase } from '@/lib/supabaseClient';
+import { User } from '@supabase/supabase-js';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 type Theme = 'light' | 'dark';
@@ -10,6 +12,10 @@ interface AppContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
   t: (en: string, tl: string) => string;
+  user: User | null;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+  loading: boolean;
 }
 
 const AppContext = createContext<AppContextType>({
@@ -19,11 +25,18 @@ const AppContext = createContext<AppContextType>({
   language: 'tagalog',
   setLanguage: () => {},
   t: (en: string, tl: string) => tl,
+  user: null,
+  login: async () => {},
+  logout: async () => {},
+  loading: true,
 });
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>('light');
   const [language, setLanguageState] = useState<Language>('tagalog');
+  const [user, setUser] = useState<User | null>(null);
+  // Start as true — we don't know auth state until getSession() resolves.
+  const [loading, setLoading] = useState<boolean>(true);
 
   const isDarkMode = theme === 'dark';
 
@@ -40,9 +53,75 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return language === 'english' ? en : tl;
   };
 
+  // Auth methods
+  const login = async (email: string, password: string) => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;
+      setUser(data.user);
+    } catch (error: any) {
+      console.error('Login error:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const logout = async () => {
+    setLoading(true);
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+    } catch (error: any) {
+      console.error('Logout error:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Listen for auth changes + get initial session
+  useEffect(() => {
+    let isMounted = true;
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (isMounted) {
+        setUser(session?.user ?? null);
+      }
+    });
+
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (isMounted) {
+        setUser(session?.user ?? null);
+        setLoading(false); // only flip to false once we actually know the auth state
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe(); // was `subscription.unsubscribe` (missing call) before
+    };
+  }, []);
+
   return (
     <AppContext.Provider
-      value={{ theme, toggleTheme, isDarkMode, language, setLanguage, t }}
+      value={{
+        theme,
+        toggleTheme,
+        isDarkMode,
+        language,
+        setLanguage,
+        t,
+        user,
+        login,
+        logout,
+        loading,
+      }}
     >
       {children}
     </AppContext.Provider>
@@ -52,4 +131,3 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 export function useApp() {
   return useContext(AppContext);
 }
-

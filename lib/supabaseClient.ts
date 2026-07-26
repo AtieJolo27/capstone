@@ -1,5 +1,5 @@
-import { Platform } from 'react-native';
 import { createClient } from '@supabase/supabase-js';
+import { Platform } from 'react-native';
 import 'react-native-url-polyfill/auto';
 
 if (Platform.OS !== 'web') {
@@ -22,3 +22,4 @@ export const supabase = createClient(
     },
   }
 );
+
