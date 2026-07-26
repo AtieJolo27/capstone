@@ -24,17 +24,17 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType>({
   theme: 'light',
-  toggleTheme: () => {},
+  toggleTheme: () => { },
   isDarkMode: false,
   language: 'tagalog',
-  setLanguage: () => {},
+  setLanguage: () => { },
   t: (en: string, tl: string) => tl,
   user: null,
-  login: async () => {},
-  logout: async () => {},
+  login: async () => { },
+  logout: async () => { },
   loading: true,
   fontSize: 'medium',
-  setFontSize: () => {},
+  setFontSize: () => { },
   fontScale: 1,
 });
 
@@ -136,7 +136,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         login,
         logout,
         loading,
-     , fontSize, setFontSize, fontScale }}
+        fontSize, setFontSize, fontScale
+      }}
     >
       {children}
     </AppContext.Provider>
