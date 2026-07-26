@@ -26,8 +26,9 @@ interface CropPrediction {
 }
 
 export default function Reasoning() {
-  const { t, language } = useApp();
+  const { t, language, fontScale } = useApp();
   const colors = useThemeColors();
+  const fs = (size: number) => Math.round(size * fontScale);
   const { crop } = useLocalSearchParams<{ crop: string }>();
   const [latest, setLatest] = useState<CropPrediction | null>(null);
   const [aiResponse, setAiResponse] = useState<string>('');
@@ -100,7 +101,6 @@ export default function Reasoning() {
     `;
 
     try {
-      // Use platform-aware API URL
       const apiUrl = getApiUrl('/api/groq');
 
       const res = await fetch(apiUrl, {
@@ -134,8 +134,8 @@ export default function Reasoning() {
   if (loadingData) {
     return (
       <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.bg }]}>
-        <ActivityIndicator size="large" color="#184B44" />
-        <Text className="mt-4 text-sm" style={{ color: colors.subText }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={{ fontSize: fs(14), marginTop: 16, color: colors.subText }}>
           {t('Loading soil data...', 'Naglo-load ng datos ng lupa...')}
         </Text>
       </ScrollView>
@@ -147,10 +147,10 @@ export default function Reasoning() {
     return (
       <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.bg }]}>
         <Ionicons name="cloud-offline-outline" size={48} color={colors.mutedText} />
-        <Text className="text-lg font-bold mt-4 text-center" style={{ color: colors.text }}>
+        <Text style={{ fontSize: fs(18), fontWeight: 'bold', marginTop: 16, textAlign: 'center', color: colors.text }}>
           {t('Error Loading Data', 'Error sa Pag-load ng Datos')}
         </Text>
-        <Text className="text-sm mt-2 text-center" style={{ color: colors.subText }}>
+        <Text style={{ fontSize: fs(14), marginTop: 8, textAlign: 'center', color: colors.subText }}>
           {fetchError}
         </Text>
       </ScrollView>
@@ -159,12 +159,12 @@ export default function Reasoning() {
 
   return (
     <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.bg }]}>
-      <Text className="text-2xl font-bold mb-1 capitalize" style={{ color: colors.text }}>
+      <Text style={{ fontSize: fs(24), fontWeight: 'bold', marginBottom: 4, textTransform: 'capitalize', color: colors.text }}>
         {activeCrop ?? t('Loading...', 'Naglo-load...')}
       </Text>
 
       {matchedRec && (
-        <Text className="text-sm mb-5" style={{ color: colors.mutedText }}>
+        <Text style={{ fontSize: fs(14), marginBottom: 20, color: colors.mutedText }}>
           {matchedRec.confidence}% {t('confidence score', 'puntos ng kumpiyansa')}
         </Text>
       )}
@@ -174,13 +174,13 @@ export default function Reasoning() {
           className="w-full rounded-xl p-4 mb-4"
           style={{ backgroundColor: colors.soilCardBg, borderColor: colors.soilCardBorder, borderWidth: 1 }}
         >
-          <Text className="font-bold text-lg mb-2" style={{ color: colors.text }}>
+          <Text style={{ fontWeight: 'bold', fontSize: fs(18), marginBottom: 8, color: colors.text }}>
             {t('Current Soil Status', 'Kasalukuyang Katayuan ng Lupa')}
           </Text>
-          <Text className="text-sm" style={{ color: colors.subText }}>
+          <Text style={{ fontSize: fs(14), color: colors.subText }}>
             N: {latest.nitrogen} | P: {latest.phosphorus} | K: {latest.potassium} | pH: {latest.ph}
           </Text>
-          <Text className="text-sm" style={{ color: colors.subText }}>
+          <Text style={{ fontSize: fs(14), color: colors.subText }}>
             {t('Temp', 'Temp')}: {latest.air_temperature}°C | {t('Humidity', 'Halumigmig')}: {latest.humidity}%
           </Text>
         </View>
@@ -195,30 +195,29 @@ export default function Reasoning() {
         }}
       >
         <Text
-          className="font-bold text-lg mb-2"
-          style={{ color: colors.isDarkMode ? '#FDBA74' : '#9A3412' }}
+          style={{ fontWeight: 'bold', fontSize: fs(18), marginBottom: 8, color: colors.isDarkMode ? '#FDBA74' : '#9A3412' }}
         >
           ✨ {t('AI Suitability Analysis', 'Pagsusuri ng Kaangkupan ng AI')}
         </Text>
 
         {loadingAI ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator color="#f15a24" size="small" />
-            <Text style={styles.loadingText}>
+            <ActivityIndicator color={colors.primary} size="small" />
+            <Text style={{ marginLeft: 10, fontSize: fs(13), color: colors.subText }}>
               {t('Analyzing soil nutrient fit...', 'Sinusuri ang akma ng nutrisyon ng lupa...')}
             </Text>
           </View>
         ) : aiError ? (
           <View>
-            <Text className="text-md leading-relaxed" style={{ color: '#DC2626' }}>
+            <Text style={{ fontSize: fs(16), lineHeight: 24, color: '#DC2626' }}>
               {t('AI analysis unavailable.', 'Hindi available ang pagsusuri ng AI.')}
             </Text>
-            <Text className="text-sm mt-2" style={{ color: colors.subText }}>
+            <Text style={{ fontSize: fs(14), marginTop: 8, color: colors.subText }}>
               {aiError}
             </Text>
           </View>
         ) : (
-          <Text className="text-md leading-relaxed" style={{ color: colors.subText }}>
+          <Text style={{ fontSize: fs(16), lineHeight: 24, color: colors.subText }}>
             {aiResponse || t('Awaiting metrics to analyze...', 'Naghihintay ng sukatan para suriin...')}
           </Text>
         )}
@@ -227,13 +226,7 @@ export default function Reasoning() {
   );
 }
 
-function isDark(colors: ReturnType<typeof useThemeColors>) {
-  return colors.isDarkMode;
-}
-
 const styles = StyleSheet.create({
   container: { flexGrow: 1, padding: 20, alignItems: 'center' },
   loadingContainer: { flexDirection: 'row', alignItems: 'center', marginTop: 10 },
-  loadingText: { marginLeft: 10, fontSize: 13, color: '#666' },
 });
-

@@ -9,6 +9,7 @@ import * as Progress from 'react-native-progress';
 interface BestFertilizerProps {
     fertilizer_name: string;
     percentage: number;
+    fontScale?: number;
 }
 
 const getStatus = (percentage: number) => {
@@ -21,11 +22,12 @@ const getStatus = (percentage: number) => {
     }
 };
 
-export default function BestFertilizer({ fertilizer_name, percentage }: BestFertilizerProps) {
+export default function BestFertilizer({ fertilizer_name, percentage, fontScale = 1 }: BestFertilizerProps) {
     const colors = useThemeColors();
     const decimal = percentage / 100;
     const status = getStatus(percentage);
     const imageUrl = getFertilizerImage(fertilizer_name);
+    const fs = (size: number) => Math.round(size * fontScale);
 
     return (
         <Link
@@ -61,15 +63,15 @@ export default function BestFertilizer({ fertilizer_name, percentage }: BestFert
                 </View>
 
                 <View className="flex-1">
-                    <Text className="text-xs uppercase tracking-wide" style={{ color: colors.greenText }}>
+                    <Text style={{ fontSize: fs(11), textTransform: 'uppercase', letterSpacing: 1, color: colors.greenText }}>
                         Best fertilizer for your field
                     </Text>
 
                     <View className="flex-row items-center justify-between mt-0.5">
-                        <Text className="font-bold text-base capitalize" style={{ color: colors.text }}>
+                        <Text style={{ fontWeight: 'bold', fontSize: fs(16), textTransform: 'capitalize', color: colors.text }}>
                             {fertilizer_name}
                         </Text>
-                        <Text className="font-bold text-sm" style={{ color: status.color }}>
+                        <Text style={{ fontWeight: 'bold', fontSize: fs(14), color: status.color }}>
                             {percentage}%
                         </Text>
                     </View>

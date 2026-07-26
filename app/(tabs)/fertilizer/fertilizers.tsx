@@ -21,8 +21,9 @@ interface FertilizerPrediction {
 }
 
 export default function Fertilizers() {
-  const { t } = useApp();
+  const { t, fontScale } = useApp();
   const colors = useThemeColors();
+  const fs = (size: number) => Math.round(size * fontScale);
   const [fertilizers, setFertilizers] = useState<FertilizerPrediction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -101,7 +102,7 @@ export default function Fertilizers() {
     return (
       <View className="flex-1 items-center justify-center" style={{ backgroundColor: colors.bg }}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text className="mt-4 text-sm" style={{ color: colors.subText }}>
+        <Text style={{ fontSize: fs(14), marginTop: 16, color: colors.subText }}>
           {t('Loading fertilizer recommendations...', 'Naglo-load ng mga rekomendasyon sa pataba...')}
         </Text>
       </View>
@@ -113,10 +114,10 @@ export default function Fertilizers() {
     return (
       <View className="flex-1 items-center justify-center px-6" style={{ backgroundColor: colors.bg }}>
         <Ionicons name="alert-circle-outline" size={64} color="#DC2626" />
-        <Text className="text-lg font-bold mt-4 text-center" style={{ color: colors.text }}>
+        <Text style={{ fontSize: fs(18), fontWeight: 'bold', marginTop: 16, textAlign: 'center', color: colors.text }}>
           {t('Error Loading Fertilizers', 'Error sa Pag-load ng mga Pataba')}
         </Text>
-        <Text className="text-sm mt-2 text-center" style={{ color: colors.subText }}>
+        <Text style={{ fontSize: fs(14), marginTop: 8, textAlign: 'center', color: colors.subText }}>
           {error}
         </Text>
         <TouchableOpacity
@@ -124,7 +125,7 @@ export default function Fertilizers() {
           className="mt-6 rounded-xl py-3 px-8"
           style={{ backgroundColor: colors.primary }}
         >
-          <Text className="font-bold" style={{ color: '#F0FDF4' }}>
+          <Text style={{ fontWeight: 'bold', fontSize: fs(14), color: '#F0FDF4' }}>
             {t('Retry', 'Subukan Muli')}
           </Text>
         </TouchableOpacity>
@@ -137,10 +138,10 @@ export default function Fertilizers() {
     return (
       <View className="flex-1 items-center justify-center px-6" style={{ backgroundColor: colors.bg }}>
         <Ionicons name="flask-outline" size={64} color={colors.greenText} />
-        <Text className="text-lg font-bold mt-4 text-center" style={{ color: colors.text }}>
+        <Text style={{ fontSize: fs(18), fontWeight: 'bold', marginTop: 16, textAlign: 'center', color: colors.text }}>
           {t('No Recommendations Yet', 'Wala Pang Rekomendasyon')}
         </Text>
-        <Text className="text-sm mt-2 text-center" style={{ color: colors.subText }}>
+        <Text style={{ fontSize: fs(14), marginTop: 8, textAlign: 'center', color: colors.subText }}>
           {t(
             'Submit soil sensor readings to get fertilizer recommendations.',
             'Magsumite ng mga pagbasa ng sensor ng lupa para makakuha ng mga rekomendasyon sa pataba.'
@@ -168,11 +169,12 @@ export default function Fertilizers() {
         <BestFertilizer
           fertilizer_name={latest.best_fertilizer}
           percentage={Math.round(bestRec.confidence)}
+          fontScale={fontScale}
         />
       )}
 
       <View className="mt-4 mb-2">
-        <Text className="text-lg font-bold" style={{ color: colors.subText }}>
+        <Text style={{ fontSize: fs(18), fontWeight: 'bold', color: colors.subText }}>
           {t('Other Recommendations', 'Iba Pang Rekomendasyon')}
         </Text>
       </View>
@@ -184,6 +186,7 @@ export default function Fertilizers() {
           <RecommendedFertilizer
             fertilizer_name={item.fertilizer}
             percentage={Math.round(item.confidence)}
+            fontScale={fontScale}
           />
         )}
         scrollEnabled={false}
@@ -191,8 +194,8 @@ export default function Fertilizers() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={colors.text}
-            colors={['#184B44']}
+            tintColor={colors.primary}
+            colors={[colors.primary, colors.primaryLight]}
           />
         }
       />

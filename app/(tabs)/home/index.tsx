@@ -174,8 +174,9 @@ function computeHealthScore(record: any): { score: number; breakdown: { label: s
 }
 
 export default function index() {
-  const { t } = useApp();
+  const { t, fontScale } = useApp();
   const colors = useThemeColors();
+  const fs = (size: number) => Math.round(size * fontScale);
 
   const [modalVisible, setModalVisibility] = useState(false);
   const [data, setData] = useState<any[]>([]);
@@ -322,7 +323,7 @@ export default function index() {
       <View>
         {/* Zone selector */}
         <View className="mt-4">
-          <Text className="text-lg font-bold" style={{ color: colors.subText }}>
+          <Text style={{ fontSize: fs(18), fontWeight: 'bold', color: colors.subText }}>
             {t('FIELD ZONES', 'SONA NG LARANGAN')}
           </Text>
         </View>
@@ -350,8 +351,7 @@ export default function index() {
                 accessibilityLabel={t(`Select ${zone.labelEn}`, `Piliin ang ${zone.labelTl}`)}
               >
                 <Text
-                  className="text-md font-bold text-center"
-                  style={{ color: isActive ? 'white' : colors.text }}
+                  style={{ fontSize: fs(16), fontWeight: 'bold', textAlign: 'center', color: isActive ? 'white' : colors.text }}
                 >
                   {t(zone.labelEn, zone.labelTl)}
                 </Text>
@@ -361,14 +361,14 @@ export default function index() {
         </View>
 
         <View className="my-2">
-          <Text className="text-md font-bold mt-4" style={{ color: colors.subText }}>
+          <Text style={{ fontSize: fs(16), fontWeight: 'bold', marginTop: 16, color: colors.subText }}>
             {t(zoneLabel.en, zoneLabel.tl)}
           </Text>
         </View>
 
         {/* Soil Health Score */}
         <View className="my-2">
-          <Text className="text-lg font-bold" style={{ color: colors.greenText }}>
+          <Text style={{ fontSize: fs(18), fontWeight: 'bold', color: colors.greenText }}>
             {t('SOIL HEALTH SCORE', 'SKOR NG KALUSUGAN NG LUPA')}
           </Text>
         </View>
@@ -454,13 +454,14 @@ export default function index() {
 
         {/* Live Sensor Readings */}
         <View className="my-2">
-          <Text className="text-lg font-bold" style={{ color: colors.subText }}>
+          <Text style={{ fontSize: fs(18), fontWeight: 'bold', color: colors.greenText }}>
             {t('LIVE SENSOR READINGS', 'BASA NG SENSOR')}
           </Text>
         </View>
         <View className="flex flex-row gap-2 py-2">
           <SensorCard
             colors={colors}
+            fontScale={fontScale}
             icon="water-outline"
             label={t('Soil Moisture', 'Halumigmig ng Lupa')}
             value={`${getSensorValue('soil_moisture', '--')}%`}
@@ -469,14 +470,16 @@ export default function index() {
           />
           <SensorCard
             colors={colors}
+            fontScale={fontScale}
             icon="thermometer-outline"
-            label={t('Soil Temperature', 'TemperaturA ng Lupa')}
+            label={t('Soil Temperature', 'Temperatura ng Lupa')}
             value={`${getSensorValue('soil_temperature', '--')}°C`}
             opt={`${OPTIMAL_RANGES.soil_temperature.min}-${OPTIMAL_RANGES.soil_temperature.max}°C`}
             progress={getProgressValue(getSensorValue('soil_temperature', '0'), 50)}
           />
           <SensorCard
             colors={colors}
+            fontScale={fontScale}
             icon="analytics-outline"
             label={t('Soil pH', 'Antas ng pH')}
             value={`${getSensorValue('ph', '--')}`}
@@ -487,6 +490,7 @@ export default function index() {
         <View className="flex flex-row gap-2 py-2">
           <SensorCard
             colors={colors}
+            fontScale={fontScale}
             icon="flash-outline"
             label={t('Nitrogen', 'Nitrogen')}
             value={`${getSensorValue('nitrogen', '--')} ppm`}
@@ -495,6 +499,7 @@ export default function index() {
           />
           <SensorCard
             colors={colors}
+            fontScale={fontScale}
             icon="flower-outline"
             label={t('Phosphorus', 'Phosphorus')}
             value={`${getSensorValue('phosphorus', '--')} ppm`}
@@ -503,6 +508,7 @@ export default function index() {
           />
           <SensorCard
             colors={colors}
+            fontScale={fontScale}
             icon="medical-outline"
             label={t('Potassium', 'Potassium')}
             value={`${getSensorValue('potassium', '--')} ppm`}
@@ -515,7 +521,7 @@ export default function index() {
       {/* Urgent Notifications — Dynamic from sensor data */}
       <View>
         <View className="my-2 flex-row items-center justify-between">
-          <Text className="text-lg font-bold" style={{ color: colors.subText }}>
+          <Text style={{ fontSize: fs(18), fontWeight: 'bold', color: colors.greenText }}>
             {t('URGENT NOTIFICATIONS', 'APURADONG NOTIFIKASYON')}
           </Text>
           {totalAlerts > 0 && (
@@ -650,6 +656,7 @@ export default function index() {
 
 function SensorCard({
   colors,
+  fontScale,
   icon,
   label,
   value,
@@ -657,12 +664,14 @@ function SensorCard({
   progress,
 }: {
   colors: ReturnType<typeof useThemeColors>;
+  fontScale: number;
   icon: React.ComponentProps<typeof Ionicons>['name'];
   label: string;
   value: string;
   opt: string;
   progress: number;
 }) {
+  const sf = (size: number) => Math.round(size * fontScale);
   return (
     <View
       className="border rounded-2xl p-3 flex-1"
@@ -682,20 +691,19 @@ function SensorCard({
         <View className="w-8 h-8 rounded-full items-center justify-center mb-1" style={{ backgroundColor: colors.cardBgAlt }}>
           <Ionicons name={icon} size={16} color={colors.primary} />
         </View>
-        <Text className="text-xs font-semibold" style={{ color: colors.subText }}>
+        <Text style={{ fontSize: sf(12), fontWeight: '600', color: colors.subText }}>
           {label}
         </Text>
       </View>
       <View className="py-1">
         <Text
-          className="text-xl font-bold text-start"
-          style={{ color: colors.text }}
+          style={{ fontSize: sf(20), fontWeight: 'bold', color: colors.text }}
         >
           {value}
         </Text>
       </View>
       <View>
-        <Text className="text-xs font-semibold text-start" style={{ color: colors.greenText }}>
+        <Text style={{ fontSize: sf(12), fontWeight: '600', color: colors.greenText }}>
           Opt: {opt}
         </Text>
         <Progress.Bar
