@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 
 type Theme = 'light' | 'dark';
 type Language = 'english' | 'tagalog';
+type FontSize = 'small' | 'medium' | 'large';
 
 interface AppContextType {
   theme: Theme;
@@ -16,6 +17,9 @@ interface AppContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   loading: boolean;
+  fontSize: FontSize;
+  setFontSize: (size: FontSize) => void;
+  fontScale: number;
 }
 
 const AppContext = createContext<AppContextType>({
@@ -29,6 +33,9 @@ const AppContext = createContext<AppContextType>({
   login: async () => {},
   logout: async () => {},
   loading: true,
+  fontSize: 'medium',
+  setFontSize: () => {},
+  fontScale: 1,
 });
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
@@ -37,6 +44,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   // Start as true — we don't know auth state until getSession() resolves.
   const [loading, setLoading] = useState<boolean>(true);
+  const [fontSize, setFontSizeState] = useState<FontSize>('medium');
 
   const isDarkMode = theme === 'dark';
 
@@ -47,6 +55,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
   };
+
+  const setFontSize = (size: FontSize) => {
+    setFontSizeState(size);
+  };
+
+  // Font size scale factor
+  const fontScale = fontSize === 'small' ? 0.85 : fontSize === 'large' ? 1.2 : 1;
 
   // Translation helper: returns Tagalog by default, English if set
   const t = (en: string, tl: string): string => {
@@ -121,7 +136,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         login,
         logout,
         loading,
-      }}
+     , fontSize, setFontSize, fontScale }}
     >
       {children}
     </AppContext.Provider>
@@ -131,3 +146,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 export function useApp() {
   return useContext(AppContext);
 }
+
+export type { FontSize };
+

@@ -1,21 +1,18 @@
-# Implementation Progress
+# Remaining Issues Fix Plan
 
-## Tasks
+## ✅ Step 1: Fix BestCrop.tsx - Broken JSX Structure (CRITICAL)
+- Added missing `</View>` closing tags for Image wrapper, flex-1 content, flex-row, and mt-2 containers
+- Added missing `</TouchableOpacity>` closing tag
 
-- [x] Plan approved by user
-- [x] 1. Create SoilHealthChart.tsx - New component for soil health history chart
-- [x] 2. Update HistoryChart.tsx - Add tooltip on tap/hover
-- [x] 3. Update history/index.tsx - Add SoilHealthChart
-- [x] 4. Create Profile screen with user info/settings
-- [x] 5. Update all _layout.tsx files - Make profile button functional
-- [x] 6. Update BestCrop.tsx - Add crop images
-- [x] 7. Update RecommendedCrops.tsx - Add crop images
-- [x] 8. Update BestFertilizer.tsx - Add fertilizer images
-- [x] 9. Update RecommendedFertilizer.tsx - Add fertilizer images
-- [x] 10. Add edit icon beside farmer name - Functional edit modals
-- [x] 11. Create AppContext - Global state for theme + language
-- [x] 12. Make dark mode toggle functional - Toggles between light/dark theme
-- [x] 13. Language toggle (English/Tagalog) - Default: Tagalog, fully functional
-- [x] 14. Apply dark mode across ALL screens and components
-- [x] 15. Apply language (English/Tagalog) across ALL screens and components
+## ✅ Step 2: Fix SoilHealthChart.tsx - Improperly Closed Legend `<View>`
+- Changed stray `<View>` (opening) to `</View>` (closing) for the legend container
+- Added proper `<View>` wrapper around the chart to maintain valid JSX structure
+
+## ✅ Step 3: Fix home/index.tsx - Typo in Filipino Text
+- `'TemperaturA ng Lupa'` → `'Temperatura ng Lupa'`
+
+## ✅ Step 4: Fix RecommendedFertilizer.tsx - Wrong Route Param
+- `params: { crop: fertilizer_name }` → `params: { fertilizer: fertilizer_name }`
+
+All issues fixed! ✅
 

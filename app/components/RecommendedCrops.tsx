@@ -9,6 +9,7 @@ import * as Progress from 'react-native-progress';
 interface RecommendedCropsProps {
     crop_name: string;
     percentage: number;
+    fontScale?: number;
 }
 
 const getStatus = (percentage: number) => {
@@ -21,11 +22,12 @@ const getStatus = (percentage: number) => {
     }
 };
 
-export default function RecommendedCrops({ crop_name, percentage }: RecommendedCropsProps) {
+export default function RecommendedCrops({ crop_name, percentage, fontScale = 1 }: RecommendedCropsProps) {
     const colors = useThemeColors();
     const decimal = percentage / 100;
     const status = getStatus(percentage);
     const imageUrl = getCropImage(crop_name);
+    const fs = (size: number) => Math.round(size * fontScale);
 
     return (
         <Link
@@ -34,8 +36,17 @@ export default function RecommendedCrops({ crop_name, percentage }: RecommendedC
         >
             <TouchableOpacity
                 activeOpacity={0.7}
-                className="flex-row items-center rounded-2xl p-3 m-1 shadow-sm"
-                style={{ backgroundColor: colors.cardBg, borderColor: colors.cardBorder, borderWidth: 1 }}
+                className="flex-row items-center rounded-2xl p-3 m-1"
+                style={{ 
+                    backgroundColor: colors.cardBg, 
+                    borderColor: colors.cardBorder, 
+                    borderWidth: 1,
+                    shadowColor: colors.primary,
+                    shadowOffset: { width: 0, height: 1 },
+                    shadowOpacity: 0.06,
+                    shadowRadius: 3,
+                    elevation: 2,
+                }}
             >
                 <View className="mr-3">
                     <Image
@@ -53,10 +64,10 @@ export default function RecommendedCrops({ crop_name, percentage }: RecommendedC
 
                 <View className="flex-1">
                     <View className="flex-row items-center justify-between">
-                        <Text className="font-bold text-base capitalize" style={{ color: colors.text }}>
+                        <Text style={{ fontWeight: 'bold', fontSize: fs(16), textTransform: 'capitalize', color: colors.text }}>
                             {crop_name}
                         </Text>
-                        <Text className="font-bold text-sm" style={{ color: status.color }}>
+                        <Text style={{ fontWeight: 'bold', fontSize: fs(14), color: status.color }}>
                             {percentage}%
                         </Text>
                     </View>
@@ -66,9 +77,10 @@ export default function RecommendedCrops({ crop_name, percentage }: RecommendedC
                             progress={decimal}
                             height={6}
                             color={status.color}
-                            unfilledColor={colors.isDarkMode ? '#374151' : '#EEF2EE'}
+                            unfilledColor={colors.progressTrack}
                             borderWidth={0}
                             width={null}
+                            borderRadius={3}
                         />
                     </View>
                 </View>

@@ -9,6 +9,7 @@ import * as Progress from 'react-native-progress';
 interface BestFertilizerProps {
     fertilizer_name: string;
     percentage: number;
+    fontScale?: number;
 }
 
 const getStatus = (percentage: number) => {
@@ -21,11 +22,12 @@ const getStatus = (percentage: number) => {
     }
 };
 
-export default function BestFertilizer({ fertilizer_name, percentage }: BestFertilizerProps) {
+export default function BestFertilizer({ fertilizer_name, percentage, fontScale = 1 }: BestFertilizerProps) {
     const colors = useThemeColors();
     const decimal = percentage / 100;
     const status = getStatus(percentage);
     const imageUrl = getFertilizerImage(fertilizer_name);
+    const fs = (size: number) => Math.round(size * fontScale);
 
     return (
         <Link
@@ -34,8 +36,17 @@ export default function BestFertilizer({ fertilizer_name, percentage }: BestFert
         >
             <TouchableOpacity
                 activeOpacity={0.7}
-                className="flex-row items-center rounded-2xl p-3 m-1 shadow-sm"
-                style={{ backgroundColor: colors.cardBg, borderColor: colors.cardBorder, borderWidth: 1 }}
+                className="flex-row items-center rounded-2xl p-3 m-1"
+                style={{ 
+                    backgroundColor: colors.sensorCardBg, 
+                    borderColor: colors.sensorCardBorder, 
+                    borderWidth: 1,
+                    shadowColor: colors.primary,
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 4,
+                    elevation: 3,
+                }}
             >
                 <View className="mr-3">
                     <Image
@@ -52,15 +63,15 @@ export default function BestFertilizer({ fertilizer_name, percentage }: BestFert
                 </View>
 
                 <View className="flex-1">
-                    <Text className="text-xs uppercase tracking-wide" style={{ color: colors.mutedText }}>
+                    <Text style={{ fontSize: fs(11), textTransform: 'uppercase', letterSpacing: 1, color: colors.greenText }}>
                         Best fertilizer for your field
                     </Text>
 
                     <View className="flex-row items-center justify-between mt-0.5">
-                        <Text className="font-bold text-base capitalize" style={{ color: colors.text }}>
+                        <Text style={{ fontWeight: 'bold', fontSize: fs(16), textTransform: 'capitalize', color: colors.text }}>
                             {fertilizer_name}
                         </Text>
-                        <Text className="font-bold text-sm" style={{ color: status.color }}>
+                        <Text style={{ fontWeight: 'bold', fontSize: fs(14), color: status.color }}>
                             {percentage}%
                         </Text>
                     </View>
@@ -70,9 +81,10 @@ export default function BestFertilizer({ fertilizer_name, percentage }: BestFert
                             progress={decimal}
                             height={6}
                             color={status.color}
-                            unfilledColor={colors.isDarkMode ? '#374151' : '#EEF2EE'}
+                            unfilledColor={colors.progressTrack}
                             borderWidth={0}
                             width={null}
+                            borderRadius={3}
                         />
                     </View>
                 </View>

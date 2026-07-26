@@ -12,16 +12,16 @@ export default function FeedLayout() {
   return (
   <Stack screenOptions={{
       headerTitle:"GeoPulse2",
-      headerTitleStyle: { fontWeight: 'bold', fontSize: 20, color: 'white' },
-      headerStyle: { backgroundColor: '#184B44' },
+      headerTitleStyle: { fontWeight: 'bold', fontSize: 20, color: '#F0FDF4' },
+      headerStyle: { backgroundColor: '#0D5E33' },
+      headerTintColor: '#F0FDF4',
       headerRight: () => (
           <TouchableOpacity onPress={() => router.push('/profile')}>
-            <Ionicons name="person-circle-outline" size={24} color="white" />
+            <Ionicons name="person-circle-outline" size={24} color="#F0FDF4" />
           </TouchableOpacity>
       )
     }}>
     <Stack.Screen name="crops" options={{ title: "Crops" }} />
-    <Stack.Screen name="recommendation" options={{ title: "Recommendations" }} />
     <Stack.Screen name="reasoning" options={{ title: "Reasoning" }} />
   </Stack>);
 }

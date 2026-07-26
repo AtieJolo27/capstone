@@ -1,8 +1,9 @@
 import { getSoilHistory, SoilHistoryRow } from '@/lib/getHistory';
+import { computeOverallScore } from '@/lib/soilHealthScore';
 import { useApp } from '@/app/lib/AppContext';
 import { useThemeColors } from '@/app/lib/useThemeColors';
 import React, { useEffect, useState } from 'react';
-import { Dimensions, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, Text, TouchableOpacity, View } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { Svg, Rect, Text as SvgText } from 'react-native-svg';
 
@@ -17,31 +18,27 @@ type TooltipInfo = {
 } | null;
 
 function computeHealthScore(row: SoilHistoryRow): number {
-  const moistureScore = Math.max(0, 100 - Math.abs((row.soil_moisture ?? 70) - 72.5) * 3.5);
-  const tempScore = Math.max(0, 100 - Math.abs((row.soil_temperature ?? 25) - 25) * 8);
-  const phScore = (row.ph >= 6.0 && row.ph <= 7.5)
-    ? 100
-    : Math.max(0, 100 - Math.abs(row.ph - 6.75) * 40);
-  const humidityScore = Math.max(0, 100 - Math.abs((row.humidity ?? 70) - 70) * 2.5);
-  const overall = (moistureScore * 0.30 + tempScore * 0.25 + phScore * 0.25 + humidityScore * 0.20);
-  return Math.round(Math.max(0, Math.min(100, overall)));
+  return computeOverallScore(row);
 }
 
 function getHealthColor(score: number): string {
-  if (score >= 75) return '#16A34A';
-  if (score >= 50) return '#EAB308';
+  if (score >= 80) return '#16A34A';
+  if (score >= 60) return '#EAB308';
+  if (score >= 40) return '#F97316';
   return '#DC2626';
 }
 
 function getHealthLabel(score: number): string {
-  if (score >= 75) return 'Excellent';
-  if (score >= 50) return 'Fair';
+  if (score >= 80) return 'Excellent';
+  if (score >= 60) return 'Good';
+  if (score >= 40) return 'Fair';
   return 'Poor';
 }
 
 export default function SoilHealthChart() {
-  const { t, isDarkMode } = useApp();
+  const { t, isDarkMode, fontScale } = useApp();
   const colors = useThemeColors();
+  const fs = (size: number) => Math.round(size * fontScale);
   const [history, setHistory] = useState<SoilHistoryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [tooltip, setTooltip] = useState<TooltipInfo>(null);
@@ -57,7 +54,7 @@ export default function SoilHealthChart() {
   if (loading) {
     return (
       <View className="p-5">
-        <Text style={{ color: colors.mutedText }}>{t('Loading health history...', 'Naglo-load ng kasaysayan ng kalusugan...')}</Text>
+        <Text style={{ fontSize: fs(14), color: colors.mutedText }}>{t('Loading health history...', 'Naglo-load ng kasaysayan ng kalusugan...')}</Text>
       </View>
     );
   }
@@ -65,7 +62,7 @@ export default function SoilHealthChart() {
   if (history.length === 0) {
     return (
       <View className="p-5">
-        <Text style={{ color: colors.mutedText }}>{t('No historical data yet.', 'Wala pang makasaysayang datos.')}</Text>
+        <Text style={{ fontSize: fs(14), color: colors.mutedText }}>{t('No historical data yet.', 'Wala pang makasaysayang datos.')}</Text>
       </View>
     );
   }
@@ -102,35 +99,34 @@ export default function SoilHealthChart() {
   return (
     <View className="p-3">
       <View className="flex-row items-center justify-between mb-3">
-        <Text className="font-bold text-lg" style={{ color: colors.text }}>
+        <Text style={{ fontWeight: 'bold', fontSize: fs(18), color: colors.text }}>
           {t('Soil Health Score', 'Iskor ng Kalusugan ng Lupa')}
         </Text>
-        <View className="flex-row items-center">
-          <View
-            className="w-3 h-3 rounded-full mr-1.5"
-            style={{ backgroundColor: getHealthColor(latestScore) }}
-          />
-          <Text className="font-bold text-sm" style={{ color: getHealthColor(latestScore) }}>
+        <View className="flex-row items-center" style={{ backgroundColor: colors.cardBgAlt, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 }}>
+          <View className="w-3 h-3 rounded-full mr-1.5" style={{ backgroundColor: getHealthColor(latestScore) }} />
+          <Text style={{ fontWeight: 'bold', fontSize: fs(14), color: getHealthColor(latestScore) }}>
             {latestScore}% - {t(getHealthLabel(latestScore), getHealthLabel(latestScore))}
           </Text>
         </View>
       </View>
-
-      <View className="flex-row justify-center mb-3 space-x-4">
-        <View className="flex-row items-center">
+      <View className="flex-row justify-center mb-3 flex-wrap" style={{ backgroundColor: colors.cardBgAlt, borderRadius: 12, padding: 8 }}>
+        <View className="flex-row items-center mr-3 mb-1">
           <View className="w-2.5 h-2.5 rounded-full mr-1" style={{ backgroundColor: '#16A34A' }} />
-          <Text style={{ color: colors.mutedText }} className="text-xs">{t('Excellent', 'Napakahusay')} (≥75)</Text>
+          <Text style={{ fontSize: fs(11), color: colors.subText }}>{t('Excellent', 'Napakahusay')} (80+)</Text>
         </View>
-        <View className="flex-row items-center">
+        <View className="flex-row items-center mr-3 mb-1">
           <View className="w-2.5 h-2.5 rounded-full mr-1" style={{ backgroundColor: '#EAB308' }} />
-          <Text style={{ color: colors.mutedText }} className="text-xs">{t('Fair', 'Katamtaman')} (50-74)</Text>
+          <Text style={{ fontSize: fs(11), color: colors.subText }}>{t('Good', 'Mabuti')} (60-79)</Text>
         </View>
-        <View className="flex-row items-center">
+        <View className="flex-row items-center mr-3 mb-1">
+          <View className="w-2.5 h-2.5 rounded-full mr-1" style={{ backgroundColor: '#F97316' }} />
+          <Text style={{ fontSize: fs(11), color: colors.subText }}>{t('Fair', 'Katamtaman')} (40-59)</Text>
+        </View>
+        <View className="flex-row items-center mb-1">
           <View className="w-2.5 h-2.5 rounded-full mr-1" style={{ backgroundColor: '#DC2626' }} />
-          <Text style={{ color: colors.mutedText }} className="text-xs">{t('Poor', 'Mahina')} ({'<'}50)</Text>
+          <Text style={{ fontSize: fs(11), color: colors.subText }}>{t('Poor', 'Mahina')} (below 40)</Text>
         </View>
       </View>
-
       <View>
         <LineChart
           data={{
@@ -157,7 +153,6 @@ export default function SoilHealthChart() {
           bezier
           style={{ borderRadius: 16 }}
         />
-
         {tooltip && (
           <Svg
             style={{
@@ -209,16 +204,11 @@ export default function SoilHealthChart() {
           </Svg>
         )}
       </View>
-
-      <TouchableOpacity
-        onPress={() => setTooltip(null)}
-        className="mt-1 self-center"
-      >
-        <Text className="text-xs" style={{ color: colors.mutedText }}>
+      <TouchableOpacity onPress={() => setTooltip(null)} className="mt-1 self-center">
+        <Text style={{ fontSize: fs(11), color: colors.mutedText }}>
           {tooltip ? t('Tap to dismiss', 'I-tap para alisin') : `${t('Last', 'Huling')} ${healthScores.length} ${t('readings', 'pagbasa')}`}
         </Text>
       </TouchableOpacity>
     </View>
   );
 }
-

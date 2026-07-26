@@ -13,6 +13,8 @@ import {
   View,
 } from 'react-native';
 
+import type { FontSize } from '@/app/lib/AppContext';
+
 interface EditableField {
   icon: React.ComponentProps<typeof Ionicons>['name'];
   labelKey: string;
@@ -58,7 +60,7 @@ const LANGUAGE_OPTIONS = [
 ];
 
 export default function ProfileScreen() {
-  const { isDarkMode, toggleTheme, language, setLanguage, t, user, login, logout, loading } = useApp();
+  const { isDarkMode, toggleTheme, language, setLanguage, t, user, login, logout, loading, fontSize, setFontSize, fontScale } = useApp();
 
   const [sections, setSections] = useState<Section[]>(DEFAULT_SECTIONS);
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -77,6 +79,7 @@ export default function ProfileScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [fontSizeModalVisible, setFontSizeModalVisible] = useState(false);
 
   const handleOpenEdit = (section: Section, item: EditableField) => {
     setEditingSection(section);
@@ -162,6 +165,7 @@ export default function ProfileScreen() {
   const subTextColor = isDarkMode ? '#6B7280' : '#6B7280';
   const borderColor = isDarkMode ? '#374151' : '#E5E7EB';
   const headerBg = isDarkMode ? '#0F3D37' : '#184B44';
+    const fs = (size: number) => size * fontScale;
 
   // If user is not logged in, show login form
   if (!user) {
@@ -290,7 +294,7 @@ export default function ProfileScreen() {
   return (
     <View className="flex-1" style={{ backgroundColor: bgColor }}>
       {/* Header */}
-      <View className="pt-12 pb-8 px-6 rounded-b-3xl" style={{ backgroundColor: headerBg }}>
+      <View className="pt-12 pb-8 px-6 rounded-b-3xl" style={{ backgroundColor: headerBg, shadowColor: '#0D5E33', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8 }}>
         <View className="flex-row items-center justify-between mb-4">
           {router.canGoBack() ? (
             <TouchableOpacity onPress={() => router.back()}>
@@ -299,7 +303,7 @@ export default function ProfileScreen() {
           ) : (
             <View style={{ width: 24 }} />
           )}
-          <Text className="text-white font-bold text-lg">
+          <Text style={{ color: 'white', fontWeight: 'bold', fontSize: fs(18) }}>
             {t('Profile', 'Profile')}
           </Text>
           <TouchableOpacity onPress={async () => {
@@ -317,7 +321,7 @@ export default function ProfileScreen() {
             <Ionicons name="person" size={40} color="white" />
           </View>
           <View className="flex-row items-center">
-            <Text className="text-white font-bold text-xl">{farmerName}</Text>
+            <Text style={{ color: 'white', fontWeight: 'bold', fontSize: fs(20) }}>{farmerName}</Text>
             <TouchableOpacity
               onPress={() => {
                 setEditNameValue(farmerName);
@@ -329,7 +333,7 @@ export default function ProfileScreen() {
               <Ionicons name="pencil" size={14} color="white" />
             </TouchableOpacity>
           </View>
-          <Text className="text-white/70 text-sm">{farmerRole}</Text>
+          <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: fs(14) }}>{farmerRole}</Text>
         </View>
       </View>
 
@@ -341,7 +345,7 @@ export default function ProfileScreen() {
             className="rounded-2xl p-4 mb-4 shadow-sm"
             style={{ backgroundColor: cardBg, borderColor: borderColor, borderWidth: 1 }}
           >
-            <Text className="text-gray-500 font-semibold text-sm uppercase tracking-wide mb-3">
+            <Text style={{ color: '#6B7280', fontWeight: '600', fontSize: fs(12), letterSpacing: 1, textTransform: 'uppercase', marginBottom: 12 }}>
               {section.titleEn}
             </Text>
             {section.items.map((item, iIndex) => (
@@ -358,10 +362,10 @@ export default function ProfileScreen() {
                   <Ionicons name={item.icon} size={16} color="#184B44" />
                 </View>
                 <View className="flex-1">
-                  <Text style={{ color: textColor }} className="font-medium text-sm">
+                  <Text style={{ color: textColor, fontWeight: '500', fontSize: fs(14) }}>
                     {language === 'tagalog' ? item.labelTl : item.labelEn}
                   </Text>
-                  <Text style={{ color: subTextColor }} className="text-xs mt-0.5">
+                  <Text style={{ color: subTextColor, fontSize: fs(12), marginTop: 2 }}>
                     {item.value}
                   </Text>
                 </View>
@@ -376,7 +380,7 @@ export default function ProfileScreen() {
           className="rounded-2xl p-4 mb-4 shadow-sm"
           style={{ backgroundColor: cardBg, borderColor: borderColor, borderWidth: 1 }}
         >
-          <Text className="text-gray-500 font-semibold text-sm uppercase tracking-wide mb-3">
+          <Text style={{ color: '#6B7280', fontWeight: '600', fontSize: fs(12), letterSpacing: 1, textTransform: 'uppercase', marginBottom: 12 }}>
             {t('Settings', 'Settings')}
           </Text>
 
@@ -394,7 +398,7 @@ export default function ProfileScreen() {
               />
             </View>
             <View className="flex-1">
-              <Text style={{ color: textColor }} className="font-medium text-sm">
+              <Text style={{ color: textColor, fontWeight: '500', fontSize: fs(14) }}>
                 {t('Dark Mode', 'Dark Mode')}
               </Text>
             </View>
@@ -418,16 +422,36 @@ export default function ProfileScreen() {
           <TouchableOpacity
             onPress={() => setLanguageModalVisible(true)}
             className="flex-row items-center py-3"
+            style={{ borderBottomWidth: 1, borderBottomColor: borderColor }}
           >
             <View className="w-8 h-8 bg-green-50 rounded-full items-center justify-center mr-3">
               <Ionicons name="language-outline" size={16} color="#184B44" />
             </View>
             <View className="flex-1">
-              <Text style={{ color: textColor }} className="font-medium text-sm">
+              <Text style={{ color: textColor, fontWeight: '500', fontSize: fs(14) }}>
                 {t('Language', 'Wika')}
               </Text>
-              <Text style={{ color: subTextColor }} className="text-xs mt-0.5">
+              <Text style={{ color: subTextColor, fontSize: fs(12), marginTop: 2 }}>
                 {language === 'tagalog' ? 'Tagalog' : 'English'}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
+          </TouchableOpacity>
+
+          {/* Font Size Selector */}
+          <TouchableOpacity
+            onPress={() => setFontSizeModalVisible(true)}
+            className="flex-row items-center py-3"
+          >
+            <View className="w-8 h-8 bg-green-50 rounded-full items-center justify-center mr-3">
+              <Ionicons name="text-outline" size={16} color="#184B44" />
+            </View>
+            <View className="flex-1">
+              <Text style={{ color: textColor, fontWeight: '500', fontSize: fs(14) }}>
+                {t('Font Size', 'Laki ng Teksto')}
+              </Text>
+              <Text style={{ color: subTextColor, fontSize: fs(12), marginTop: 2 }}>
+                {fontSize === 'small' ? t('Small', 'Maliit') : fontSize === 'large' ? t('Large', 'Malaki') : t('Medium', 'Katamtaman')}
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
@@ -439,25 +463,25 @@ export default function ProfileScreen() {
           className="rounded-2xl p-4 mb-6 shadow-sm"
           style={{ backgroundColor: cardBg, borderColor: borderColor, borderWidth: 1 }}
         >
-          <Text className="text-gray-500 font-semibold text-sm uppercase tracking-wide mb-3">
+          <Text style={{ color: '#6B7280', fontWeight: '600', fontSize: fs(12), letterSpacing: 1, textTransform: 'uppercase', marginBottom: 12 }}>
             {t('Account Statistics', 'Estadistika ng Account')}
           </Text>
           <View className="flex-row justify-around">
             <View className="items-center">
-              <Text className="text-2xl font-bold" style={{ color: '#184B44' }}>156</Text>
-              <Text style={{ color: subTextColor }} className="text-xs">
+              <Text style={{ fontWeight: 'bold', fontSize: fs(24), color: '#184B44' }}>156</Text>
+              <Text style={{ color: subTextColor, fontSize: fs(12) }}>
                 {t('Readings', 'Pagbasa')}
               </Text>
             </View>
             <View className="items-center">
-              <Text className="text-2xl font-bold" style={{ color: '#184B44' }}>12</Text>
-              <Text style={{ color: subTextColor }} className="text-xs">
+              <Text style={{ fontWeight: 'bold', fontSize: fs(24), color: '#184B44' }}>12</Text>
+              <Text style={{ color: subTextColor, fontSize: fs(12) }}>
                 {t('Recommendations', 'Rekomendasyon')}
               </Text>
             </View>
             <View className="items-center">
-              <Text className="text-2xl font-bold" style={{ color: '#184B44' }}>3</Text>
-              <Text style={{ color: subTextColor }} className="text-xs">
+              <Text style={{ fontWeight: 'bold', fontSize: fs(24), color: '#184B44' }}>3</Text>
+              <Text style={{ color: subTextColor, fontSize: fs(12) }}>
                 {t('Zones', 'Sona')}
               </Text>
             </View>
@@ -560,6 +584,92 @@ export default function ProfileScreen() {
                 </Text>
               </TouchableOpacity>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Font Size Selection Modal */}
+      <Modal visible={fontSizeModalVisible} transparent animationType="fade">
+        <View className="flex-1 bg-black/50 justify-center items-center px-6">
+          <View className="bg-white rounded-2xl w-full p-6">
+            <View className="flex-row items-center justify-between mb-4">
+              <Text className="text-lg font-bold text-gray-800">
+                {t('Select Font Size', 'Pumili ng Laki ng Teksto')}
+              </Text>
+              <TouchableOpacity onPress={() => setFontSizeModalVisible(false)}>
+                <Ionicons name="close" size={24} color="#9CA3AF" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Font size preview */}
+            <View className="mb-6 p-4 bg-green-50 rounded-xl">
+              <Text className="text-center text-gray-600 font-medium">
+                {t('Preview', 'Pag-preview')}
+              </Text>
+              <Text
+                className="text-center mt-2"
+                style={{
+                  fontSize: fontSize === 'small' ? 12 : fontSize === 'large' ? 22 : 16,
+                  color: '#0D5E33',
+                  fontWeight: '500',
+                }}
+              >
+                {t('The quick brown fox', 'Ang mabilis na brown fox')}
+              </Text>
+            </View>
+
+            {[
+              { key: 'small' as FontSize, labelEn: 'Small', labelTl: 'Maliit', icon: 'remove-outline' as const, fontSize: 12 },
+              { key: 'medium' as FontSize, labelEn: 'Medium', labelTl: 'Katamtaman', icon: 'text-outline' as const, fontSize: 16 },
+              { key: 'large' as FontSize, labelEn: 'Large', labelTl: 'Malaki', icon: 'add-outline' as const, fontSize: 22 },
+            ].map((option, index) => (
+              <TouchableOpacity
+                key={option.key}
+                onPress={() => {
+                  const label = language === 'tagalog' ? option.labelTl : option.labelEn;
+                  Alert.alert(
+                    t('Confirm Font Size', 'Kumpirmahin ang Laki ng Teksto'),
+                    t(`Are you sure you want to change the font size to ${label}?`, `Sigurado ka bang gusto mong baguhin ang laki ng teksto sa ${label}?`),
+                    [
+                      { text: t('Cancel', 'Kanselahin'), style: 'cancel' },
+                      {
+                        text: t('Confirm', 'Kumpirmahin'),
+                        onPress: () => {
+                          setFontSize(option.key);
+                          setFontSizeModalVisible(false);
+                        }
+                      }
+                    ]
+                  );
+                }}
+                className="flex-row items-center py-4 px-2"
+                style={{
+                  borderBottomWidth: index === 2 ? 0 : 1,
+                  borderBottomColor: '#E5E7EB',
+                }}
+              >
+                <View className="w-9 h-9 bg-green-50 rounded-full items-center justify-center mr-3">
+                  <Ionicons
+                    name={option.icon}
+                    size={18}
+                    color="#0D5E33"
+                  />
+                </View>
+                <Text
+                  className="flex-1 ml-1 font-medium"
+                  style={{
+                    fontSize: option.fontSize,
+                    color: fontSize === option.key ? '#0D5E33' : '#4B5563',
+                    fontWeight: fontSize === option.key ? '700' : '500',
+                  }}
+                >
+                  {language === 'tagalog' ? option.labelTl : option.labelEn}
+                </Text>
+                {fontSize === option.key && (
+                  <Ionicons name="checkmark-circle" size={22} color="#16A34A" />
+                )}
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
       </Modal>

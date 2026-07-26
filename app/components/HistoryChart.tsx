@@ -15,14 +15,14 @@ type Metric = {
 };
 
 const METRICS: Metric[] = [
-  { key: 'nitrogen', label: 'Nitrogen', labelTl: 'Nitrogen', unit: 'mg/kg', color: '#2563EB' },
-  { key: 'phosphorus', label: 'Phosphorus', labelTl: 'Phosphorus', unit: 'mg/kg', color: '#7C3AED' },
-  { key: 'potassium', label: 'Potassium', labelTl: 'Potassium', unit: 'mg/kg', color: '#DB2777' },
+  { key: 'nitrogen', label: 'Nitrogen', labelTl: 'Nitrogen', unit: 'mg/kg', color: '#16A34A' },
+  { key: 'phosphorus', label: 'Phosphorus', labelTl: 'Phosphorus', unit: 'mg/kg', color: '#22C55E' },
+  { key: 'potassium', label: 'Potassium', labelTl: 'Potassium', unit: 'mg/kg', color: '#0D5E33' },
   { key: 'ph', label: 'Soil pH', labelTl: 'Antas ng pH', unit: '', color: '#059669' },
-  { key: 'air_temperature', label: 'Air Temp', labelTl: 'Temp ng Hangin', unit: '°C', color: '#EA580C' },
-  { key: 'soil_temperature', label: 'Soil Temp', labelTl: 'Temp ng Lupa', unit: '°C', color: '#D97706' },
-  { key: 'humidity', label: 'Humidity', labelTl: 'Halumigmig', unit: '%', color: '#0891B2' },
-  { key: 'soil_moisture', label: 'Soil Moisture', labelTl: 'Halumigmig ng Lupa', unit: '%', color: '#16A34A' },
+  { key: 'air_temperature', label: 'Air Temp', labelTl: 'Temp ng Hangin', unit: '°C', color: '#4ADE80' },
+  { key: 'soil_temperature', label: 'Soil Temp', labelTl: 'Temp ng Lupa', unit: '°C', color: '#10B981' },
+  { key: 'humidity', label: 'Humidity', labelTl: 'Halumigmig', unit: '%', color: '#34D399' },
+  { key: 'soil_moisture', label: 'Soil Moisture', labelTl: 'Halumigmig ng Lupa', unit: '%', color: '#6EE7B7' },
 ];
 
 const screenWidth = Dimensions.get('window').width;
@@ -37,8 +37,9 @@ type TooltipInfo = {
 } | null;
 
 export default function NutrientHistoryChart() {
-  const { t, language } = useApp();
+  const { t, language, fontScale } = useApp();
   const colors = useThemeColors();
+  const fs = (size: number) => Math.round(size * fontScale);
   const [history, setHistory] = useState<SoilHistoryRow[]>([]);
   const [selected, setSelected] = useState<Metric>(METRICS[0]);
   const [loading, setLoading] = useState(true);
@@ -55,7 +56,7 @@ export default function NutrientHistoryChart() {
   if (loading) {
     return (
       <View className="p-5">
-        <Text style={{ color: colors.mutedText }}>{t('Loading history...', 'Naglo-load ng kasaysayan...')}</Text>
+        <Text style={{ fontSize: fs(14), color: colors.mutedText }}>{t('Loading history...', 'Naglo-load ng kasaysayan...')}</Text>
       </View>
     );
   }
@@ -63,7 +64,7 @@ export default function NutrientHistoryChart() {
   if (history.length === 0) {
     return (
       <View className="p-5">
-        <Text style={{ color: colors.mutedText }}>{t('No historical data yet.', 'Wala pang makasaysayang datos.')}</Text>
+        <Text style={{ fontSize: fs(14), color: colors.mutedText }}>{t('No historical data yet.', 'Wala pang makasaysayang datos.')}</Text>
       </View>
     );
   }
@@ -98,7 +99,7 @@ export default function NutrientHistoryChart() {
 
   return (
     <View className="p-3">
-      <Text className="font-bold text-lg mb-2" style={{ color: colors.text }}>
+      <Text style={{ fontWeight: 'bold', fontSize: fs(18), color: colors.text, marginBottom: 8 }}>
         {t('Nutrient & Soil History', 'Kasaysayan ng Nutrisyon at Lupa')}
       </Text>
 
@@ -112,12 +113,12 @@ export default function NutrientHistoryChart() {
             }}
             className="mr-2 px-3 py-1.5 rounded-full"
             style={{
-              backgroundColor: selected.key === metric.key ? metric.color : (colors.isDarkMode ? '#374151' : '#F3F4F6'),
+              backgroundColor: selected.key === metric.key ? metric.color : (colors.isDarkMode ? '#1A3522' : '#DCFCE7'),
             }}
           >
             <Text
               className="text-xs font-semibold"
-              style={{ color: selected.key === metric.key ? 'white' : (colors.isDarkMode ? '#D1D5DB' : '#6B7280') }}
+              style={{ color: selected.key === metric.key ? 'white' : (colors.isDarkMode ? '#86EFAC' : '#0D5E33') }}
             >
               {language === 'tagalog' ? metric.labelTl : metric.label}
             </Text>
@@ -205,11 +206,10 @@ export default function NutrientHistoryChart() {
         onPress={() => setTooltip(null)}
         className="mt-2 self-center"
       >
-        <Text className="text-xs" style={{ color: colors.mutedText }}>
+        <Text style={{ fontSize: fs(11), color: colors.mutedText }}>
           {tooltip ? t('Tap to dismiss', 'I-tap para alisin') : `${t('Last', 'Huling')} ${history.length} ${t('readings', 'pagbasa')}`}
         </Text>
       </TouchableOpacity>
     </View>
   );
 }
-

@@ -9,13 +9,14 @@ export const unstable_settings = {
 }
 export default function HistoryLayout(){
     return (
-        <Stack screenOptions={{
+    <Stack screenOptions={{
       headerTitle:"GeoPulse",
-      headerTitleStyle: { fontWeight: 'bold', fontSize: 20, color: 'white' },
-      headerStyle: { backgroundColor: '#184B44' },
+      headerTitleStyle: { fontWeight: 'bold', fontSize: 20, color: '#F0FDF4' },
+      headerStyle: { backgroundColor: '#0D5E33' },
+      headerTintColor: '#F0FDF4',
       headerRight: () => (
           <TouchableOpacity onPress={() => router.push('/profile')}>
-            <Ionicons name="person-circle-outline" size={24} color="white" />
+            <Ionicons name="person-circle-outline" size={24} color="#F0FDF4" />
           </TouchableOpacity>
       )
     }}>

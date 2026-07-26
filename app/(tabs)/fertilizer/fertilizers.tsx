@@ -2,9 +2,11 @@ import BestFertilizer from '@/app/components/BestFertilizer';
 import RecommendedFertilizer from '@/app/components/RecommendedFertilizer';
 import { useApp } from '@/app/lib/AppContext';
 import { useThemeColors } from '@/app/lib/useThemeColors';
-import React, { useEffect, useState } from 'react';
-import { FlatList, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import React, { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, FlatList, RefreshControl, Text, TouchableOpacity, View } from 'react-native';
 import { supabase } from '../../../lib/supabaseClient';
+import { setCache, getCache, CACHE_KEYS } from '../../../lib/cache';
 
 interface FertilizerRecommendation {
   fertilizer: string;
@@ -19,19 +21,67 @@ interface FertilizerPrediction {
 }
 
 export default function Fertilizers() {
-  const { t } = useApp();
+  const { t, fontScale } = useApp();
   const colors = useThemeColors();
+  const fs = (size: number) => Math.round(size * fontScale);
   const [fertilizers, setFertilizers] = useState<FertilizerPrediction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const getFertilizers = useCallback(async () => {
+    try {
+      setError(null);
+
+      // Try cache first
+      const cached = await getCache<FertilizerPrediction[]>(CACHE_KEYS.FERTILIZER_PREDICTIONS);
+      if (cached && cached.length > 0) {
+        setFertilizers(cached);
+        setLoading(false);
+      }
+
+      const { data, error: fetchError } = await supabase
+        .from('fertilizer_predictions')
+        .select()
+        .order('created_at', { ascending: false });
+
+      if (fetchError) {
+        throw new Error(fetchError.message);
+      }
+
+      const fetched = data ?? [];
+      setFertilizers(fetched);
+
+      // Update cache in background
+      if (fetched.length > 0) {
+        await setCache(CACHE_KEYS.FERTILIZER_PREDICTIONS, fetched);
+      }
+    } catch (err: any) {
+      console.warn('getFertilizers error:', err);
+      setError(err.message || 'Failed to fetch fertilizer recommendations');
+      // Keep stale cache if available
+      if (fertilizers.length === 0) {
+        const cached = await getCache<FertilizerPrediction[]>(CACHE_KEYS.FERTILIZER_PREDICTIONS);
+        if (cached) {
+          setFertilizers(cached);
+        }
+      }
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
 
   useEffect(() => {
     getFertilizers();
 
     const channel = supabase
       .channel('fertilizer_predictions')
-      .on('postgres_changes',
+      .on(
+        'postgres_changes',
         { event: '*', schema: 'public', table: 'fertilizer_predictions' },
         (payload) => {
-          console.log("Changes Detected", payload)
+          console.log('Changes Detected', payload);
           getFertilizers();
         }
       )
@@ -39,14 +89,66 @@ export default function Fertilizers() {
 
     return () => {
       supabase.removeChannel(channel);
-    }
-  }, []);
+    };
+  }, [getFertilizers]);
 
-  async function getFertilizers() {
-    const { data, error } = await supabase.from('fertilizer_predictions').select();
-    console.log('data:', data);
-    console.log('error:', error);
-    setFertilizers(data ?? []);
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    getFertilizers();
+  }, [getFertilizers]);
+
+  // Loading state
+  if (loading && fertilizers.length === 0) {
+    return (
+      <View className="flex-1 items-center justify-center" style={{ backgroundColor: colors.bg }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={{ fontSize: fs(14), marginTop: 16, color: colors.subText }}>
+          {t('Loading fertilizer recommendations...', 'Naglo-load ng mga rekomendasyon sa pataba...')}
+        </Text>
+      </View>
+    );
+  }
+
+  // Error state
+  if (error && fertilizers.length === 0) {
+    return (
+      <View className="flex-1 items-center justify-center px-6" style={{ backgroundColor: colors.bg }}>
+        <Ionicons name="alert-circle-outline" size={64} color="#DC2626" />
+        <Text style={{ fontSize: fs(18), fontWeight: 'bold', marginTop: 16, textAlign: 'center', color: colors.text }}>
+          {t('Error Loading Fertilizers', 'Error sa Pag-load ng mga Pataba')}
+        </Text>
+        <Text style={{ fontSize: fs(14), marginTop: 8, textAlign: 'center', color: colors.subText }}>
+          {error}
+        </Text>
+        <TouchableOpacity
+          onPress={getFertilizers}
+          className="mt-6 rounded-xl py-3 px-8"
+          style={{ backgroundColor: colors.primary }}
+        >
+          <Text style={{ fontWeight: 'bold', fontSize: fs(14), color: '#F0FDF4' }}>
+            {t('Retry', 'Subukan Muli')}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // Empty state
+  if (fertilizers.length === 0) {
+    return (
+      <View className="flex-1 items-center justify-center px-6" style={{ backgroundColor: colors.bg }}>
+        <Ionicons name="flask-outline" size={64} color={colors.greenText} />
+        <Text style={{ fontSize: fs(18), fontWeight: 'bold', marginTop: 16, textAlign: 'center', color: colors.text }}>
+          {t('No Recommendations Yet', 'Wala Pang Rekomendasyon')}
+        </Text>
+        <Text style={{ fontSize: fs(14), marginTop: 8, textAlign: 'center', color: colors.subText }}>
+          {t(
+            'Submit soil sensor readings to get fertilizer recommendations.',
+            'Magsumite ng mga pagbasa ng sensor ng lupa para makakuha ng mga rekomendasyon sa pataba.'
+          )}
+        </Text>
+      </View>
+    );
   }
 
   const latest = fertilizers[0];
@@ -59,16 +161,20 @@ export default function Fertilizers() {
   const otherRecs = sortedRecs.slice(1);
 
   return (
-    <View className="p-5" style={{ backgroundColor: colors.bg, flex: 1 }}>
+    <View
+      className="p-5"
+      style={{ backgroundColor: colors.bg, flex: 1 }}
+    >
       {latest && bestRec && (
         <BestFertilizer
           fertilizer_name={latest.best_fertilizer}
           percentage={Math.round(bestRec.confidence)}
+          fontScale={fontScale}
         />
       )}
 
       <View className="mt-4 mb-2">
-        <Text className="text-lg font-bold" style={{ color: colors.subText }}>
+        <Text style={{ fontSize: fs(18), fontWeight: 'bold', color: colors.subText }}>
           {t('Other Recommendations', 'Iba Pang Rekomendasyon')}
         </Text>
       </View>
@@ -80,10 +186,20 @@ export default function Fertilizers() {
           <RecommendedFertilizer
             fertilizer_name={item.fertilizer}
             percentage={Math.round(item.confidence)}
+            fontScale={fontScale}
           />
         )}
         scrollEnabled={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary, colors.primaryLight]}
+          />
+        }
       />
     </View>
   );
-} 
+}
+
