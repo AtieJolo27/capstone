@@ -2,9 +2,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '@/app/lib/AppContext';
 import { useThemeColors } from '@/app/lib/useThemeColors';
 import React, { useEffect, useState } from 'react';
-import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
 import * as Progress from 'react-native-progress';
+import { exportSensorReadingsPdf } from '../../../lib/exportSensorReadings';
 import { supabase } from '../../../lib/supabaseClient';
 import Urgent_Card from '../../components/UrgentCard';
 
@@ -14,6 +15,7 @@ export default function index() {
 
   const [modalVisible, setModalVisibility] = useState(false);
   const [data, setData] = useState<any[]>([]);
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -35,6 +37,24 @@ export default function index() {
   async function fetchData() {
     const { data: fetchedData, error } = await supabase.from('sensor_readings').select("*")
     setData(fetchedData ?? []);
+  }
+
+  async function handleExport() {
+    setIsExporting(true);
+    try {
+      const { data: readings, error } = await supabase
+        .from('sensor_readings')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      await exportSensorReadingsPdf(readings ?? []);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to export sensor readings.';
+      Alert.alert('Export failed', message);
+    } finally {
+      setIsExporting(false);
+    }
   }
 
   const getSensorValue = (field: string, defaultValue: string = '--') => {
@@ -139,9 +159,23 @@ export default function index() {
           </View>
         </View>
         <View className="my-2">
-          <Text className="text-lg font-bold" style={{ color: colors.subText }}>
-            {t('LIVE SENSOR READINGS', 'BASA NG SENSOR')}
-          </Text>
+          <View className="flex-row items-center justify-between">
+            <Text className="text-lg font-bold" style={{ color: colors.subText }}>
+              {t('LIVE SENSOR READINGS', 'BASA NG SENSOR')}
+            </Text>
+            <TouchableOpacity
+              accessibilityLabel="Export sensor readings as PDF"
+              disabled={isExporting}
+              onPress={handleExport}
+              style={{ opacity: isExporting ? 0.55 : 1 }}
+              className="flex-row items-center rounded-lg bg-green-700 px-3 py-2"
+            >
+              <Ionicons name="download-outline" size={18} color="white" />
+              <Text className="ml-1 font-bold text-white">
+                {isExporting ? t('Exporting...', 'Ini-export...') : t('Export PDF', 'I-export ang PDF')}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
         <View className="flex flex-row gap-2 py-2">
           <SensorCard

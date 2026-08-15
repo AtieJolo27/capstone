@@ -83,7 +83,7 @@ export default function Reasoning() {
     `;
 
     try {
-      const res = await fetch('/api/groq', {
+      const res = await fetch('http://192.168.1.19:8081/api/groq', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: dynamicPrompt }),
