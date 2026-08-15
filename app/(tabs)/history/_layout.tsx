@@ -1,26 +1,77 @@
+import NutrientHistoryChart from '@/app/components/HistoryChart'
+import SoilHealthChart from '@/app/components/SoilHealthChart'
+import { exportSoilHistoryPDF } from '@/app/lib/exportSoilPDF'
+import { useThemeColors } from '@/app/lib/useThemeColors'
+import React, { useState } from 'react'
+import {
+    Alert,
+    ScrollView,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native'
 
-import { Ionicons } from "@expo/vector-icons";
-import { router, Stack } from "expo-router";
-import { TouchableOpacity } from "react-native";
-import "../../global.css";
+const index = () => {
+  const colors = useThemeColors()
+  const [exporting, setExporting] = useState(false)
 
-export const unstable_settings = {
-    initialRouteName: "index",
-}
-export default function HistoryLayout(){
-    return (
-    <Stack screenOptions={{
-      headerTitle:"GeoPulse",
-      headerTitleStyle: { fontWeight: 'bold', fontSize: 20, color: '#F0FDF4' },
-      headerStyle: { backgroundColor: '#0D5E33' },
-      headerTintColor: '#F0FDF4',
-      headerRight: () => (
-          <TouchableOpacity onPress={() => router.push('/profile')}>
-            <Ionicons name="person-circle-outline" size={24} color="#F0FDF4" />
-          </TouchableOpacity>
+  const handleExportPDF = async () => {
+    try {
+      setExporting(true)
+
+      await exportSoilHistoryPDF()
+
+    } catch (error) {
+      console.error('PDF export error:', error)
+
+      Alert.alert(
+        'Export Failed',
+        'Unable to generate the soil report.'
       )
-    }}>
-            <Stack.Screen name="index" options={{title:"History"}} />
-        </Stack>
-    );
+
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  return (
+    <ScrollView
+      className="flex-1"
+      style={{ backgroundColor: colors.bg }}
+    >
+
+      <SoilHealthChart />
+
+      <View
+        className="my-2 mx-4"
+        style={{
+          borderTopWidth: 1,
+          borderTopColor: colors.border,
+        }}
+      />
+
+      <NutrientHistoryChart />
+
+      {/* PDF BUTTON */}
+      <TouchableOpacity
+        onPress={handleExportPDF}
+        disabled={exporting}
+        className="mx-4 mb-6 rounded-xl py-4 items-center"
+        style={{
+          backgroundColor: exporting
+            ? colors.mutedText
+            : '#0D5E33',
+        }}
+      >
+        <Text className="text-white font-bold text-base">
+          {exporting
+            ? 'Generating PDF...'
+            : 'Export PDF Report'}
+        </Text>
+      </TouchableOpacity>
+
+    </ScrollView>
+  )
 }
+
+export default index
