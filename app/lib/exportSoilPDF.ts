@@ -1,47 +1,161 @@
-import { getSoilHistory } from '@/lib/getHistory';
+import { getSoilHistory, SoilHistoryRow } from '@/lib/getHistory';
+import { computeOverallScore } from '@/lib/soilHealthScore';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 
+function getHealthLabel(score: number): string {
+  if (score >= 80) return 'Excellent';
+  if (score >= 60) return 'Good';
+  if (score >= 40) return 'Fair';
+  return 'Poor';
+}
+
+function getHealthColor(score: number): string {
+  if (score >= 80) return '#16A34A';
+  if (score >= 60) return '#EAB308';
+  if (score >= 40) return '#F97316';
+  return '#DC2626';
+}
+
+function formatNumber(value: unknown): string {
+  if (value === null || value === undefined || value === '') {
+    return '-';
+  }
+
+  const number = Number(value);
+
+  if (Number.isNaN(number)) {
+    return '-';
+  }
+
+  return number.toFixed(1);
+}
+
+function formatDate(date: string) {
+  return new Date(date).toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 export async function exportSoilHistoryPDF() {
-  // Get the same 30 readings used by your chart
+
   const history = await getSoilHistory(30);
 
   if (!history || history.length === 0) {
     throw new Error('No soil history available.');
   }
 
-  const rows = history
-    .map((row) => {
-      const date = new Date(row.created_at).toLocaleString();
+  // -----------------------------------------
+  // HEALTH SCORES
+  // -----------------------------------------
+
+  const healthScores = history.map((row) =>
+    computeOverallScore(row)
+  );
+
+  const latestRow =
+    history[history.length - 1];
+
+  const latestScore =
+    healthScores[healthScores.length - 1];
+
+  const healthLabel =
+    getHealthLabel(latestScore);
+
+  const healthColor =
+    getHealthColor(latestScore);
+
+  // -----------------------------------------
+  // HEALTH HISTORY TABLE
+  // -----------------------------------------
+
+  const healthRows = history
+    .map((row: SoilHistoryRow) => {
+
+      const score = computeOverallScore(row);
 
       return `
         <tr>
-          <td>${date}</td>
-          <td>${row.nitrogen ?? '-'} mg/kg</td>
-          <td>${row.phosphorus ?? '-'} mg/kg</td>
-          <td>${row.potassium ?? '-'} mg/kg</td>
-          <td>${row.ph ?? '-'}</td>
-          <td>${row.soil_moisture ?? '-'}%</td>
-          <td>${row.humidity ?? '-'}%</td>
-          <td>${row.soil_temperature ?? '-'} °C</td>
-          <td>${row.air_temperature ?? '-'} °C</td>
+          <td>${formatDate(row.created_at)}</td>
+
+          <td>
+            <span
+              style="
+                color: ${getHealthColor(score)};
+                font-weight: bold;
+              "
+            >
+              ${score}%
+            </span>
+          </td>
+
+          <td>${getHealthLabel(score)}</td>
         </tr>
       `;
     })
     .join('');
 
+  // -----------------------------------------
+  // NUTRIENT HISTORY
+  // -----------------------------------------
+
+  const nutrientRows = history
+    .map((row: SoilHistoryRow) => {
+
+      return `
+        <tr>
+          <td>${formatDate(row.created_at)}</td>
+
+          <td>${formatNumber(row.nitrogen)}</td>
+
+          <td>${formatNumber(row.phosphorus)}</td>
+
+          <td>${formatNumber(row.potassium)}</td>
+
+          <td>${formatNumber(row.ph)}</td>
+
+          <td>${formatNumber(row.soil_moisture)}%</td>
+
+          <td>${formatNumber(row.humidity)}%</td>
+
+          <td>${formatNumber(row.soil_temperature)}°C</td>
+
+          <td>${formatNumber(row.air_temperature)}°C</td>
+        </tr>
+      `;
+    })
+    .join('');
+
+  // -----------------------------------------
+  // HTML
+  // -----------------------------------------
+
   const html = `
     <!DOCTYPE html>
 
     <html>
+
       <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1.0"
+        />
 
         <style>
+
+          @page {
+            margin: 30px;
+          }
+
           body {
             font-family: Arial, sans-serif;
-            padding: 30px;
             color: #222;
+            padding: 20px;
           }
 
           h1 {
@@ -50,45 +164,84 @@ export async function exportSoilHistoryPDF() {
             margin-bottom: 5px;
           }
 
+          h2 {
+            color: #0D5E33;
+            margin-top: 30px;
+            border-bottom: 2px solid #0D5E33;
+            padding-bottom: 6px;
+          }
+
           .subtitle {
             text-align: center;
             color: #666;
             margin-bottom: 25px;
           }
 
-          h2 {
-            color: #0D5E33;
-            margin-top: 25px;
+          .health-card {
+            text-align: center;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            background-color: #f0fdf4;
+            border: 2px solid ${healthColor};
           }
 
-          table {
+          .health-score {
+            font-size: 42px;
+            font-weight: bold;
+            color: ${healthColor};
+          }
+
+          .health-label {
+            font-size: 20px;
+            font-weight: bold;
+            color: ${healthColor};
+            margin-top: 5px;
+          }
+
+          .generated {
+            text-align: center;
+            font-size: 11px;
+            color: #777;
+          }
+
+          .latest-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+          }
+
+          .latest-table td {
+            border-bottom: 1px solid #ddd;
+            padding: 9px;
+          }
+
+          .latest-table td:first-child {
+            font-weight: bold;
+            width: 50%;
+          }
+
+          table.history {
             width: 100%;
             border-collapse: collapse;
             margin-top: 15px;
             font-size: 9px;
           }
 
-          th {
+          table.history th {
             background-color: #0D5E33;
             color: white;
-            padding: 8px;
+            padding: 7px;
           }
 
-          td {
+          table.history td {
             border: 1px solid #ccc;
-            padding: 7px;
+            padding: 6px;
             text-align: center;
           }
 
-          tr:nth-child(even) {
+          table.history tr:nth-child(even) {
             background-color: #f5f5f5;
-          }
-
-          .info {
-            margin-top: 20px;
-            padding: 15px;
-            background-color: #f0fdf4;
-            border: 1px solid #bbf7d0;
           }
 
           .footer {
@@ -97,28 +250,137 @@ export async function exportSoilHistoryPDF() {
             color: #777;
             font-size: 10px;
           }
+
         </style>
+
       </head>
 
       <body>
 
-        <h1>Soil Quality Report</h1>
+        <!-- TITLE -->
+
+        <h1>
+          Soil Quality Report
+        </h1>
 
         <div class="subtitle">
           Soil Monitoring System
         </div>
 
-        <div class="info">
-          <strong>Report Generated:</strong>
-          ${new Date().toLocaleString()}
-          <br />
-          <strong>Total Readings:</strong>
-          ${history.length}
+        <div class="generated">
+          Generated: ${new Date().toLocaleString()}
         </div>
 
-        <h2>Soil & Nutrient History</h2>
 
-        <table>
+        <!-- ================================= -->
+        <!-- OVERALL HEALTH -->
+        <!-- ================================= -->
+
+        <h2>
+          Overall Soil Health
+        </h2>
+
+        <div class="health-card">
+
+          <div class="health-score">
+            ${latestScore}%
+          </div>
+
+          <div class="health-label">
+            ${healthLabel}
+          </div>
+
+        </div>
+
+
+        <!-- ================================= -->
+        <!-- LATEST READING -->
+        <!-- ================================= -->
+
+        <h2>
+          Latest Soil Reading
+        </h2>
+
+        <table class="latest-table">
+
+          <tr>
+            <td>Date</td>
+            <td>${formatDate(latestRow.created_at)}</td>
+          </tr>
+
+          <tr>
+            <td>Soil pH</td>
+            <td>${formatNumber(latestRow.ph)}</td>
+          </tr>
+
+          <tr>
+            <td>Nitrogen</td>
+            <td>${formatNumber(latestRow.nitrogen)} mg/kg</td>
+          </tr>
+
+          <tr>
+            <td>Phosphorus</td>
+            <td>${formatNumber(latestRow.phosphorus)} mg/kg</td>
+          </tr>
+
+          <tr>
+            <td>Potassium</td>
+            <td>${formatNumber(latestRow.potassium)} mg/kg</td>
+          </tr>
+
+          <tr>
+            <td>Soil Moisture</td>
+            <td>${formatNumber(latestRow.soil_moisture)}%</td>
+          </tr>
+
+          <tr>
+            <td>Humidity</td>
+            <td>${formatNumber(latestRow.humidity)}%</td>
+          </tr>
+
+          <tr>
+            <td>Soil Temperature</td>
+            <td>${formatNumber(latestRow.soil_temperature)}°C</td>
+          </tr>
+
+          <tr>
+            <td>Air Temperature</td>
+            <td>${formatNumber(latestRow.air_temperature)}°C</td>
+          </tr>
+
+        </table>
+
+
+        <!-- ================================= -->
+        <!-- HEALTH HISTORY -->
+        <!-- ================================= -->
+
+        <h2>
+          Soil Health History
+        </h2>
+
+        <table class="history">
+
+          <tr>
+            <th>Date</th>
+            <th>Score</th>
+            <th>Status</th>
+          </tr>
+
+          ${healthRows}
+
+        </table>
+
+
+        <!-- ================================= -->
+        <!-- NUTRIENT HISTORY -->
+        <!-- ================================= -->
+
+        <h2>
+          Nutrient & Soil History
+        </h2>
+
+        <table class="history">
 
           <tr>
             <th>Date</th>
@@ -132,30 +394,40 @@ export async function exportSoilHistoryPDF() {
             <th>Air Temp</th>
           </tr>
 
-          ${rows}
+          ${nutrientRows}
 
         </table>
+
 
         <div class="footer">
           Generated by Soil Quality Monitoring System
         </div>
 
       </body>
+
     </html>
   `;
 
-  // Generate PDF
+  // -----------------------------------------
+  // GENERATE PDF
+  // -----------------------------------------
+
   const { uri } = await Print.printToFileAsync({
     html,
   });
 
-  // Open native sharing / save interface
+  // -----------------------------------------
+  // SHARE / SAVE
+  // -----------------------------------------
+
   if (await Sharing.isAvailableAsync()) {
+
     await Sharing.shareAsync(uri, {
       mimeType: 'application/pdf',
       dialogTitle: 'Export Soil Quality Report',
       UTI: 'com.adobe.pdf',
     });
+
   }
 
   return uri;
