@@ -160,46 +160,20 @@ export default function Crops() {
   const bestRec = sortedRecs[0];
   const otherRecs = sortedRecs.slice(1);
 
-  return (
-    <View
-      className="p-5"
-      style={{ backgroundColor: colors.bg, flex: 1 }}
-    >
-      {latest && bestRec && (
-        <BestCrop
-          crop_name={latest.best_crop}
-          percentage={Math.round(bestRec.confidence)}
-          fontScale={fontScale}
-        />
-      )}
-
-      <View className="mt-4 mb-2">
-        <Text style={{ fontSize: fs(18), fontWeight: 'bold', color: colors.subText }}>
-          {t('Other Recommendations', 'Iba Pang Rekomendasyon')}
-        </Text>
-      </View>
-
-      <FlatList
-        data={otherRecs}
-        keyExtractor={(item) => item.crop}
-        renderItem={({ item }) => (
-          <Recommended_Crops
-            crop_name={item.crop}
-            percentage={Math.round(item.confidence)}
-            fontScale={fontScale}
-          />
-        )}
-        scrollEnabled={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.primary}
-            colors={[colors.primary, colors.primaryLight]}
-          />
-        }
-      />
-    </View>
-  );
+  return <FlatList
+    data={otherRecs}
+    keyExtractor={(item) => item.crop}
+    renderItem={({ item }) => <Recommended_Crops crop_name={item.crop} percentage={Math.round(item.confidence)} fontScale={fontScale} />}
+    style={{ backgroundColor: colors.bg }}
+    contentContainerStyle={{ padding: 20, paddingBottom: 110 }}
+    ListHeaderComponent={<>
+      <Text style={{ fontSize: fs(14), color: colors.subText }}>Crop guide</Text>
+      <Text style={{ fontSize: fs(24), fontWeight: '800', color: colors.text, marginTop: 2, marginBottom: 16 }}>{t('What should you plant?', 'Ano ang dapat ninyong itanim?')}</Text>
+      {latest && bestRec ? <BestCrop crop_name={latest.best_crop} percentage={Math.round(bestRec.confidence)} fontScale={fontScale} /> : null}
+      <View className="mt-6 mb-2"><Text style={{ fontSize: fs(18), fontWeight: '800', color: colors.text }}>{t('Other suitable crops', 'Iba pang angkop na pananim')}</Text></View>
+    </>}
+    ListEmptyComponent={<Text style={{ color: colors.subText, textAlign: 'center', paddingVertical: 16 }}>{t('No other crop recommendations yet.', 'Wala pang ibang rekomendasyon sa pananim.')}</Text>}
+    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary, colors.primaryLight]} />}
+  />;
 }
 

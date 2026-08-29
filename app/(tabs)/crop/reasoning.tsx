@@ -1,7 +1,8 @@
 import { supabase } from '@/lib/supabaseClient';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import * as Linking from 'expo-linking';
 import { useApp } from '@/app/lib/AppContext';
 import { useThemeColors } from '@/app/lib/useThemeColors';
 import { getApiUrl } from '@/lib/apiConfig';
@@ -25,6 +26,21 @@ interface CropPrediction {
   [key: string]: any;
 }
 
+const REFERENCE_LINKS = [
+  {
+    label: 'DA-BSWM FertMap — crop-specific soil guidance',
+    url: 'https://nshp.bswm.da.gov.ph/fertmap/',
+  },
+  {
+    label: 'DA-BSWM National Soil Health Program',
+    url: 'https://nshp.bswm.da.gov.ph/',
+  },
+  {
+    label: 'FAO — Soil fertility guidance',
+    url: 'https://www.fao.org/global-soil-partnership/areas-of-work/soil-fertility/en/',
+  },
+];
+
 export default function Reasoning() {
   const { t, language, fontScale } = useApp();
   const colors = useThemeColors();
@@ -36,6 +52,13 @@ export default function Reasoning() {
   const [aiError, setAiError] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [loadingData, setLoadingData] = useState(true);
+  const assessmentText = aiResponse.split(/\bReferences\s*:/i)[0]?.trim();
+
+  function openReference(url: string) {
+    void Linking.openURL(url).catch(() => {
+      setAiError('Unable to open this reference on this device.');
+    });
+  }
 
   useEffect(() => {
     getLatest();
@@ -84,10 +107,7 @@ export default function Reasoning() {
         : `Respond entirely in English.`;
 
     const dynamicPrompt = `
-    First, define what ${targetCrop} is and its purpose for farming.
-
-      Explain why ${targetCrop} is suitable or the suitability of it
-       for a soil with the following environmental metrics:
+      Give a simple crop recommendation for ${targetCrop} using these soil conditions:
       - Nitrogen (N): ${data.nitrogen}
       - Phosphorus (P): ${data.phosphorus}
       - Potassium (K): ${data.potassium}
@@ -95,7 +115,7 @@ export default function Reasoning() {
       - Air Temperature: ${data.air_temperature}°C
       - Humidity: ${data.humidity}%
       
-      Keep the explanation clear, actionable, concise, and focused on why these specific values match the plant's needs. Don't add so much design and formatting, just bullet it. Make it concise so that farmers can quickly understand the suitability of this crop for their soil.
+      State whether planting is advisable and explain the main reason from these readings. Recommend practical ways to maintain soil nutrients and crop health now, before consulting a local DA agricultural technician for crop-specific fertilizer rates. Write formally but in simple farmer-friendly language. Do not give exact fertilizer rates.
       
       CRITICAL: ${responseLanguage} Do NOT provide bilingual or dual-language responses. Use ONLY the specified language. Don't change terms that have no direct translation such as phosphorus, nitrogen, potassium, pH.
     `;
@@ -216,9 +236,38 @@ export default function Reasoning() {
               {aiError}
             </Text>
           </View>
+        ) : aiResponse ? (
+          <View>
+            <Text style={{ fontSize: fs(16), lineHeight: 24, color: colors.subText }}>
+              {assessmentText}
+            </Text>
+
+            <Text style={{ marginTop: 16, marginBottom: 6, fontWeight: '700', fontSize: fs(14), color: colors.text }}>
+              {t('Sources — tap to open', 'Mga Sanggunian — pindutin upang buksan')}
+            </Text>
+            {REFERENCE_LINKS.map((reference) => (
+              <Pressable
+                key={reference.url}
+                onPress={() => openReference(reference.url)}
+                accessibilityRole="link"
+                accessibilityLabel={`${reference.label}. Opens in browser.`}
+                style={({ pressed }) => ({
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingVertical: 7,
+                  opacity: pressed ? 0.65 : 1,
+                })}
+              >
+                <Ionicons name="open-outline" size={16} color={colors.primary} />
+                <Text style={{ marginLeft: 7, fontSize: fs(14), color: colors.primary, textDecorationLine: 'underline' }}>
+                  [{REFERENCE_LINKS.indexOf(reference) + 1}] {reference.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
         ) : (
           <Text style={{ fontSize: fs(16), lineHeight: 24, color: colors.subText }}>
-            {aiResponse || t('Awaiting metrics to analyze...', 'Naghihintay ng sukatan para suriin...')}
+            {t('Awaiting metrics to analyze...', 'Naghihintay ng sukatan para suriin...')}
           </Text>
         )}
       </View>

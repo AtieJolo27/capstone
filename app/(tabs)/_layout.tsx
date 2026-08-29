@@ -6,63 +6,62 @@ export default function RootLayout() {
   return (
     <Tabs screenOptions={{
       headerShown: false,
+      animation: 'fade',
       tabBarStyle: {
-        backgroundColor: '#0D5E33',
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
-        borderBottomLeftRadius: 20,
-        borderBottomRightRadius: 20,
-        height: 65,
-        marginBottom: 30,
-        paddingBottom: 8,
-        paddingTop: 8,
-        shadowColor: '#0D5E33',
+        backgroundColor: '#1B5E37',
+        borderRadius: 22,
+        height: 68,
+        marginHorizontal: 14,
+        marginBottom: 18,
+        paddingBottom: 7,
+        paddingTop: 7,
+        shadowColor: '#123E26',
         shadowOffset: { width: 0, height: -4 },
         shadowOpacity: 0.2,
         shadowRadius: 8,
         elevation: 10,
         borderTopWidth: 0,
       },
-      tabBarActiveTintColor: '#22C55E',
-      tabBarInactiveTintColor: 'rgba(255,255,255,0.6)',
+      tabBarActiveTintColor: '#FFFFFF',
+      tabBarInactiveTintColor: 'rgba(255,255,255,0.62)',
       tabBarLabelStyle: {
         fontSize: 11,
-        fontWeight: '600',
+        fontWeight: '700',
       },
      }}>
       <Tabs.Screen name='home'
       options={{
         title: "Home",
-        tabBarIcon: ({color, size}) =>
-          <Ionicons name="home" color={color} size={size} />
+        tabBarIcon: ({color, size, focused}) =>
+          <Ionicons name={focused ? 'home' : 'home-outline'} color={color} size={size} />
       }}
       />
       <Tabs.Screen name="crop"
         options={{
           title: "Crops",
-          tabBarIcon: ({color, size}) =>
-            <Ionicons name="leaf-outline" color={color} size={size} />
+        tabBarIcon: ({color, size, focused}) =>
+            <Ionicons name={focused ? 'leaf' : 'leaf-outline'} color={color} size={size} />
         }}
         />
       <Tabs.Screen name="fertilizer"
         options={{
           title: "Fertilizers",
-          tabBarIcon: ({color, size}) =>
-            <Ionicons name="checkmark-circle-outline" color={color} size={size} />
+        tabBarIcon: ({color, size, focused}) =>
+            <Ionicons name={focused ? 'nutrition' : 'nutrition-outline'} color={color} size={size} />
         }}
         />
       <Tabs.Screen name="irrigation"
         options={{
           title: "Irrigation",
-          tabBarIcon: ({color, size}) =>
-            <Ionicons name="water-outline" color={color} size={size} />
+        tabBarIcon: ({color, size, focused}) =>
+            <Ionicons name={focused ? 'water' : 'water-outline'} color={color} size={size} />
         }}
         />
       <Tabs.Screen name="history"
         options={{
           title: "History",
-          tabBarIcon: ({color, size}) =>
-            <Ionicons name="receipt-outline" color={color} size={size} />
+        tabBarIcon: ({color, size, focused}) =>
+            <Ionicons name={focused ? 'stats-chart' : 'stats-chart-outline'} color={color} size={size} />
         }}
         />
 

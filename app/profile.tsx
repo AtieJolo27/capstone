@@ -159,7 +159,7 @@ export default function ProfileScreen() {
     );
   };
 
-  const bgColor = isDarkMode ? '#111827' : '#F9FAFB';
+  const bgColor = isDarkMode ? '#111827' : '#FFFFFF';
   const cardBg = isDarkMode ? '#1F2937' : '#FFFFFF';
   const textColor = isDarkMode ? '#9CA3AF' : '#1F2937';
   const subTextColor = isDarkMode ? '#6B7280' : '#6B7280';

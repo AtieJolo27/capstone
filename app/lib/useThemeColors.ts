@@ -5,43 +5,45 @@ export function useThemeColors() {
 
   return {
     // Base backgrounds
-    bg: isDarkMode ? '#0A1A0F' : '#F0FDF4',
-    cardBg: isDarkMode ? '#14281A' : '#FFFFFF',
-    cardBgAlt: isDarkMode ? '#1A3522' : '#DCFCE7',
+    // Keep every farmer-facing tab on a calm white canvas. Cards provide the hierarchy.
+    bg: '#FFFFFF',
+    cardBg: isDarkMode ? '#14251A' : '#FFFFFF',
+    cardBgAlt: isDarkMode ? '#1C3323' : '#FFFFFF',
     
     // Text colors
-    text: isDarkMode ? '#F0FDF4' : '#1A2E05',
-    subText: isDarkMode ? '#86EFAC' : '#4A6741',
-    mutedText: isDarkMode ? '#4A6741' : '#6B7280',
-    greenText: isDarkMode ? '#4ADE80' : '#16A34A',
+    text: isDarkMode ? '#F4FAF3' : '#183322',
+    subText: isDarkMode ? '#A7C6AD' : '#5B7161',
+    mutedText: isDarkMode ? '#77917D' : '#748078',
+    greenText: isDarkMode ? '#8FD19E' : '#28784A',
     
     // Borders
-    border: isDarkMode ? '#1A3522' : '#BBF7D0',
-    cardBorder: isDarkMode ? '#1A3522' : '#DCFCE7',
+    border: isDarkMode ? '#294332' : '#D6E2D8',
+    cardBorder: isDarkMode ? '#294332' : '#DDE7DF',
     
     // Headers
-    headerBg: isDarkMode ? '#0A4A28' : '#0D5E33',
+    headerBg: isDarkMode ? '#123E26' : '#1B5E37',
     headerText: '#F0FDF4',
     
     // Sensor cards
-    sensorCardBg: isDarkMode ? '#14281A' : '#F0FDF4',
-    sensorCardBorder: isDarkMode ? '#1A3522' : '#BBF7D0',
+    sensorCardBg: isDarkMode ? '#14251A' : '#FFFFFF',
+    sensorCardBorder: isDarkMode ? '#294332' : '#E3ECE3',
     
     // Soil card
-    soilCardBg: isDarkMode ? '#14281A' : '#DCFCE7',
-    soilCardBorder: isDarkMode ? '#1A3522' : '#BBF7D0',
+    soilCardBg: isDarkMode ? '#173923' : '#FFFFFF',
+    soilCardBorder: isDarkMode ? '#2D553A' : '#D7E5D9',
     
     // Utility
     white: isDarkMode ? '#14281A' : '#FFFFFF',
     isDarkMode,
     
     // Accent colors
-    primary: '#16A34A',
-    primaryLight: '#22C55E',
-    primaryDark: '#0D5E33',
-    success: '#22C55E',
-    warning: '#EAB308',
-    danger: '#DC2626',
+    primary: '#28784A',
+    primaryLight: '#4C9A68',
+    primaryDark: '#1B5E37',
+    success: '#2E7D4A',
+    warning: '#B7791F',
+    danger: '#C2413A',
+    inputBg: isDarkMode ? '#102116' : '#FFFFFF',
     
     // Progress bar colors
     progressTrack: isDarkMode ? '#1A3522' : '#E5E7EB',

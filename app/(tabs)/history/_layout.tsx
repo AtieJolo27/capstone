@@ -1,77 +1,21 @@
-import NutrientHistoryChart from '@/app/components/HistoryChart'
-import SoilHealthChart from '@/app/components/SoilHealthChart'
-import { exportSoilHistoryPDF } from '@/app/lib/exportSoilPDF'
-import { useThemeColors } from '@/app/lib/useThemeColors'
-import React, { useState } from 'react'
-import {
-    Alert,
-    ScrollView,
-    Text,
-    TouchableOpacity,
-    View,
-} from 'react-native'
+import { HeaderActions } from '@/app/components/HeaderActions';
+import { Stack } from 'expo-router';
+import React from 'react';
+import '../../global.css';
 
-const index = () => {
-  const colors = useThemeColors()
-  const [exporting, setExporting] = useState(false)
-
-  const handleExportPDF = async () => {
-    try {
-      setExporting(true)
-
-      await exportSoilHistoryPDF()
-
-    } catch (error) {
-      console.error('PDF export error:', error)
-
-      Alert.alert(
-        'Export Failed',
-        'Unable to generate the soil report.'
-      )
-
-    } finally {
-      setExporting(false)
-    }
-  }
-
+export default function HistoryLayout() {
   return (
-    <ScrollView
-      className="flex-1"
-      style={{ backgroundColor: colors.bg }}
+    <Stack
+      screenOptions={{
+        headerTitle: 'Field History',
+        headerTitleStyle: { fontWeight: '800', fontSize: 20, color: '#FFFFFF' },
+        headerStyle: { backgroundColor: '#1B5E37' },
+        headerTintColor: '#FFFFFF',
+        animation: 'fade',
+        headerRight: () => <HeaderActions />,
+      }}
     >
-
-      <SoilHealthChart />
-
-      <View
-        className="my-2 mx-4"
-        style={{
-          borderTopWidth: 1,
-          borderTopColor: colors.border,
-        }}
-      />
-
-      <NutrientHistoryChart />
-
-      {/* PDF BUTTON */}
-      <TouchableOpacity
-        onPress={handleExportPDF}
-        disabled={exporting}
-        className="mx-4 mb-6 rounded-xl py-4 items-center"
-        style={{
-          backgroundColor: exporting
-            ? colors.mutedText
-            : '#0D5E33',
-        }}
-      >
-        <Text className="text-white font-bold text-base">
-          {exporting
-            ? 'Generating PDF...'
-            : 'Export PDF Report'}
-        </Text>
-      </TouchableOpacity>
-
-    </ScrollView>
-  )
+      <Stack.Screen name="index" options={{ title: 'Field History' }} />
+    </Stack>
+  );
 }
-
-export default index

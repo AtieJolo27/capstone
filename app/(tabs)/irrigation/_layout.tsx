@@ -1,25 +1,21 @@
-import { Ionicons } from '@expo/vector-icons';
+import { HeaderActions } from '@/app/components/HeaderActions';
 import { Stack } from 'expo-router';
 import React from 'react';
-import { StyleSheet, TouchableOpacity } from 'react-native';
+import { StyleSheet } from 'react-native';
 
 
 export default function IrrigationLayout() {
     return (
         <Stack
         screenOptions={{
-            headerTitle:"GeoPulse",
+            headerTitle:"Irrigation Guide",
       headerTitleStyle: { fontWeight: 'bold', fontSize: 20, color: '#F0FDF4' },
-      headerStyle: { backgroundColor: '#0D5E33' },
+      headerStyle: { backgroundColor: '#1B5E37' },
       headerTintColor: '#F0FDF4',
-      headerRight: () => (
-          <TouchableOpacity onPress={() => router.push('/profile')}>
-            <Ionicons name="person-circle-outline" size={24} color="#F0FDF4" />
-          </TouchableOpacity>
-      )
+      headerRight: () => <HeaderActions />
         }}>
             <Stack.Screen
-            name='irrigation'
+            name='index'
             />
         </Stack>
     );

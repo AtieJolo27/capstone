@@ -113,7 +113,7 @@ export default function NutrientHistoryChart() {
             }}
             className="mr-2 px-3 py-1.5 rounded-full"
             style={{
-              backgroundColor: selected.key === metric.key ? metric.color : (colors.isDarkMode ? '#1A3522' : '#DCFCE7'),
+              backgroundColor: selected.key === metric.key ? metric.color : colors.cardBgAlt,
             }}
           >
             <Text

@@ -1,7 +1,7 @@
-import { Ionicons } from '@expo/vector-icons';
-import { router, Stack } from 'expo-router';
+import { HeaderActions } from '@/app/components/HeaderActions';
+import { Stack } from 'expo-router';
 import React from 'react';
-import { StyleSheet, TouchableOpacity } from 'react-native';
+import { StyleSheet } from 'react-native';
 import "../../global.css";
 
 export const unstable_settings = {
@@ -10,14 +10,10 @@ export const unstable_settings = {
 export default function HomeLayout () {
   return (
     <Stack screenOptions={{
-      headerTitle:"GeoPulse",
+      headerTitle:"My Field",
       headerTitleStyle: { fontWeight: 'bold', fontSize: 20, color: 'white' },
-      headerStyle: { backgroundColor: '#0D5E33' },
-      headerRight: () => (
-          <TouchableOpacity onPress={() => router.push('/profile')}>
-            <Ionicons name="person-circle-outline" size={24} color="white" />
-          </TouchableOpacity>
-      )
+      headerStyle: { backgroundColor: '#1B5E37' },
+      headerRight: () => <HeaderActions />
     }}>
         <Stack.Screen
             name="index"

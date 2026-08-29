@@ -41,7 +41,13 @@
           }
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow GeoPulse to use your location to show the local weather forecast."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

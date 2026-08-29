@@ -44,7 +44,7 @@ export function LoadingSkeleton({
           width: width as any,
           height,
           borderRadius,
-          backgroundColor: colors.isDarkMode ? '#1A3522' : '#DCFCE7',
+          backgroundColor: colors.isDarkMode ? '#1A3522' : '#E9EEEA',
           opacity,
         },
         style,

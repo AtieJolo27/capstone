@@ -160,46 +160,20 @@ export default function Fertilizers() {
   const bestRec = sortedRecs[0];
   const otherRecs = sortedRecs.slice(1);
 
-  return (
-    <View
-      className="p-5"
-      style={{ backgroundColor: colors.bg, flex: 1 }}
-    >
-      {latest && bestRec && (
-        <BestFertilizer
-          fertilizer_name={latest.best_fertilizer}
-          percentage={Math.round(bestRec.confidence)}
-          fontScale={fontScale}
-        />
-      )}
-
-      <View className="mt-4 mb-2">
-        <Text style={{ fontSize: fs(18), fontWeight: 'bold', color: colors.subText }}>
-          {t('Other Recommendations', 'Iba Pang Rekomendasyon')}
-        </Text>
-      </View>
-
-      <FlatList
-        data={otherRecs}
-        keyExtractor={(item) => item.fertilizer}
-        renderItem={({ item }) => (
-          <RecommendedFertilizer
-            fertilizer_name={item.fertilizer}
-            percentage={Math.round(item.confidence)}
-            fontScale={fontScale}
-          />
-        )}
-        scrollEnabled={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.primary}
-            colors={[colors.primary, colors.primaryLight]}
-          />
-        }
-      />
-    </View>
-  );
+  return <FlatList
+    data={otherRecs}
+    keyExtractor={(item) => item.fertilizer}
+    renderItem={({ item }) => <RecommendedFertilizer fertilizer_name={item.fertilizer} percentage={Math.round(item.confidence)} fontScale={fontScale} />}
+    style={{ backgroundColor: colors.bg }}
+    contentContainerStyle={{ padding: 20, paddingBottom: 110 }}
+    ListHeaderComponent={<>
+      <Text style={{ fontSize: fs(14), color: colors.subText }}>Fertilizer guide</Text>
+      <Text style={{ fontSize: fs(24), fontWeight: '800', color: colors.text, marginTop: 2, marginBottom: 16 }}>{t('What fertilizer should you use?', 'Anong pataba ang dapat ninyong gamitin?')}</Text>
+      {latest && bestRec ? <BestFertilizer fertilizer_name={latest.best_fertilizer} percentage={Math.round(bestRec.confidence)} fontScale={fontScale} /> : null}
+      <View className="mt-6 mb-2"><Text style={{ fontSize: fs(18), fontWeight: '800', color: colors.text }}>{t('Other suitable fertilizers', 'Iba pang angkop na pataba')}</Text></View>
+    </>}
+    ListEmptyComponent={<Text style={{ color: colors.subText, textAlign: 'center', paddingVertical: 16 }}>{t('No other fertilizer recommendations yet.', 'Wala pang ibang rekomendasyon sa pataba.')}</Text>}
+    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary, colors.primaryLight]} />}
+  />;
 }
 
