@@ -8,7 +8,7 @@ from sklearn.metrics import accuracy_score
 
 # Load dataset
 df = pd.read_csv(
-    "app/machine_learning/datasets/crop_fertilizer_recommendation_dataset.csv"
+    "app/machine_learning/datasets/fertilizer_recommendation_dataset_ph.csv"
 )
 
 print(df.head())
