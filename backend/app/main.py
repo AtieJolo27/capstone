@@ -290,6 +290,55 @@ def receive_realtime_sensor(
 
 
     # =====================================================
+    # RUN CROP + FERTILIZER PREDICTION FOR THIS READING
+    #
+    # sensor_record already has the exact same shape as
+    # SensorInput (used by the manual /predict endpoint),
+    # so we can feed it straight into predict_crop /
+    # predict_fertilizer here. This makes crop_predictions
+    # and fertilizer_predictions in Supabase update on every
+    # real sensor reading, instead of only when /predict is
+    # called manually.
+    # =====================================================
+
+    crop_prediction = None
+    fertilizer_prediction = None
+
+    try:
+
+        crop_prediction = predict_crop(
+            sensor_record
+        )
+
+        fertilizer_prediction = predict_fertilizer(
+            sensor_record,
+            crop_prediction["best_crop"]
+        )
+
+        save_prediction(
+            sensor_record,
+            crop_prediction
+        )
+
+        save_fertilizer_prediction(
+            crop_prediction,
+            fertilizer_prediction
+        )
+
+        print(
+            "CROP + FERTILIZER PREDICTION SAVED TO SUPABASE"
+        )
+
+    except Exception as e:
+
+        print(
+            "ERROR RUNNING/SAVING PREDICTION:"
+        )
+
+        print(e)
+
+
+    # =====================================================
     # RETURN TO ESP32
     # =====================================================
 
@@ -304,5 +353,11 @@ def receive_realtime_sensor(
             data.model_dump(),
 
         "saved":
-            sensor_record
+            sensor_record,
+
+        "crop":
+            crop_prediction,
+
+        "fertilizer":
+            fertilizer_prediction
     }
