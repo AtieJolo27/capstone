@@ -1,7 +1,7 @@
 from app.database.supabase import supabase
 
 
-def save_fertilizer_prediction(crop_prediction, fertilizer_prediction):
+def save_fertilizer_prediction(crop_prediction, fertilizer_prediction, zone_id=None):
 
     data = {
 
@@ -9,7 +9,9 @@ def save_fertilizer_prediction(crop_prediction, fertilizer_prediction):
 
         "best_fertilizer": fertilizer_prediction["best_fertilizer"],
 
-        "recommendations": fertilizer_prediction["recommendations"]
+        "recommendations": fertilizer_prediction["recommendations"],
+
+        "zone_id": zone_id,
 
     }
 

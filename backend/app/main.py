@@ -47,56 +47,166 @@ def home():
 
 
 # =========================================================
-# ZONE / SOIL TYPE SETTINGS
+# ZONES
 #
-# The farmer sets the soil type for the active zone from the
-# app's "Add Zone" flow. This is stored in Supabase and looked
-# up every time a real sensor reading comes in, so crop and
-# fertilizer recommendations only consider crops suited to that
-# soil type.
+# Zones are now real Supabase records (not just local app
+# state). Each zone has a soil type. The farmer creates a zone
+# from the app's "Add Zone" flow, and can switch which zone is
+# "active" (i.e. which one the physical sensor is currently
+# reading for). Every sensor reading and prediction gets tagged
+# with the active zone's id, and crop/fertilizer recommendations
+# are filtered to that zone's soil type.
 # =========================================================
 
-class SoilTypeInput(BaseModel):
+class ZoneInput(BaseModel):
+    name_en: str
+    name_tl: str
     soil_type: str
 
 
-@app.post("/device/soil-type")
-def set_soil_type(data: SoilTypeInput):
-
-    try:
-        supabase.table("device_settings").upsert({
-            "device_id": DEVICE_ID,
-            "soil_type": data.soil_type,
-        }).execute()
-
-    except Exception as e:
-        print("ERROR SAVING SOIL TYPE:")
-        print(e)
-        return {"status": "error", "message": str(e)}
-
-    return {"status": "success", "soil_type": data.soil_type}
+class ActiveZoneInput(BaseModel):
+    zone_id: int
 
 
-@app.get("/device/soil-type")
-def get_soil_type():
+@app.post("/zones")
+def create_zone(data: ZoneInput):
 
     try:
         response = (
             supabase
+            .table("zones")
+            .insert({
+                "name_en": data.name_en,
+                "name_tl": data.name_tl,
+                "soil_type": data.soil_type,
+            })
+            .execute()
+        )
+
+        return {"status": "success", "zone": response.data[0]}
+
+    except Exception as e:
+        print("ERROR CREATING ZONE:")
+        print(e)
+        return {"status": "error", "message": str(e)}
+
+
+@app.get("/zones")
+def list_zones():
+
+    try:
+        response = (
+            supabase
+            .table("zones")
+            .select("*")
+            .order("id")
+            .execute()
+        )
+
+        return {"count": len(response.data), "data": response.data}
+
+    except Exception as e:
+        print("ERROR LISTING ZONES:")
+        print(e)
+        return {"count": 0, "data": []}
+
+
+@app.post("/device/active-zone")
+def set_active_zone(data: ActiveZoneInput):
+
+    try:
+        supabase.table("device_settings").upsert({
+            "device_id": DEVICE_ID,
+            "active_zone_id": data.zone_id,
+        }).execute()
+
+    except Exception as e:
+        print("ERROR SETTING ACTIVE ZONE:")
+        print(e)
+        return {"status": "error", "message": str(e)}
+
+    return {"status": "success", "zone_id": data.zone_id}
+
+
+@app.get("/device/active-zone")
+def get_active_zone():
+
+    try:
+        settings_response = (
+            supabase
             .table("device_settings")
-            .select("soil_type")
+            .select("active_zone_id")
             .eq("device_id", DEVICE_ID)
             .execute()
         )
 
-        if response.data:
-            return {"soil_type": response.data[0]["soil_type"]}
+        if not settings_response.data:
+            return {"zone": None}
+
+        zone_id = settings_response.data[0]["active_zone_id"]
+
+        if zone_id is None:
+            return {"zone": None}
+
+        zone_response = (
+            supabase
+            .table("zones")
+            .select("*")
+            .eq("id", zone_id)
+            .execute()
+        )
+
+        if zone_response.data:
+            return {"zone": zone_response.data[0]}
 
     except Exception as e:
-        print("ERROR READING SOIL TYPE:")
+        print("ERROR READING ACTIVE ZONE:")
         print(e)
 
-    return {"soil_type": None}
+    return {"zone": None}
+
+
+def get_active_zone_for_device():
+    """
+    Internal helper (not an endpoint) - returns the active zone's full
+    row (including id + soil_type), or None if no zone is set yet.
+    Used by /sensor/realtime to tag readings and filter predictions.
+    """
+
+    try:
+        settings_response = (
+            supabase
+            .table("device_settings")
+            .select("active_zone_id")
+            .eq("device_id", DEVICE_ID)
+            .execute()
+        )
+
+        if not settings_response.data:
+            return None
+
+        zone_id = settings_response.data[0]["active_zone_id"]
+
+        if zone_id is None:
+            return None
+
+        zone_response = (
+            supabase
+            .table("zones")
+            .select("*")
+            .eq("id", zone_id)
+            .execute()
+        )
+
+        if zone_response.data:
+            return zone_response.data[0]
+
+    except Exception as e:
+        print("ERROR READING ACTIVE ZONE (internal):")
+        print(e)
+
+    return None
+
 
 
 # =========================================================
@@ -307,6 +417,18 @@ def receive_realtime_sensor(
     # being sent here, so we use humidity as the moisture value.
     # =====================================================
 
+    # =====================================================
+    # LOOK UP ACTIVE ZONE
+    #
+    # Every reading gets tagged with whichever zone the farmer
+    # currently has active in the app, so history/crops/
+    # fertilizer/irrigation screens can all filter by zone.
+    # =====================================================
+
+    active_zone = get_active_zone_for_device()
+    active_zone_id = active_zone["id"] if active_zone else None
+    active_soil_type = active_zone["soil_type"] if active_zone else None
+
     sensor_record = {
 
         "soil_moisture": data.humidity,
@@ -324,6 +446,8 @@ def receive_realtime_sensor(
         "phosphorus": int(data.phosphorus),
 
         "potassium": int(data.potassium),
+
+        "zone_id": active_zone_id,
     }
 
 
@@ -368,35 +492,15 @@ def receive_realtime_sensor(
 
     try:
 
-        # Look up the farmer's currently set soil type for this
-        # device, so crop recommendations only consider crops
-        # suited to that soil type.
-        current_soil_type = None
-
-        try:
-            soil_type_response = (
-                supabase
-                .table("device_settings")
-                .select("soil_type")
-                .eq("device_id", DEVICE_ID)
-                .execute()
-            )
-
-            if soil_type_response.data:
-                current_soil_type = soil_type_response.data[0]["soil_type"]
-
-        except Exception as e:
-            print("ERROR READING SOIL TYPE (continuing without filter):")
-            print(e)
-
         crop_prediction = predict_crop(
             sensor_record,
-            soil_type=current_soil_type
+            soil_type=active_soil_type
         )
 
         save_prediction(
             sensor_record,
-            crop_prediction
+            crop_prediction,
+            zone_id=active_zone_id
         )
 
         print(
@@ -423,7 +527,8 @@ def receive_realtime_sensor(
 
             save_fertilizer_prediction(
                 crop_prediction,
-                fertilizer_prediction
+                fertilizer_prediction,
+                zone_id=active_zone_id
             )
 
             print(

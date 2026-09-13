@@ -1,7 +1,7 @@
 from app.database.supabase import supabase
 
 
-def save_prediction(sensor_data, prediction_result):
+def save_prediction(sensor_data, prediction_result, zone_id=None):
 
     data = {
         "soil_moisture": sensor_data["soil_moisture"],
@@ -14,7 +14,9 @@ def save_prediction(sensor_data, prediction_result):
         "potassium": sensor_data["potassium"],
 
         "best_crop": prediction_result["best_crop"],
-        "recommendations": prediction_result["recommendations"]
+        "recommendations": prediction_result["recommendations"],
+
+        "zone_id": zone_id,
     }
 
     response = (
