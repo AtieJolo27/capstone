@@ -1,0 +1,77 @@
+{
+    "Clay": [
+      "rice"
+    ],
+    "Clay Loam": [
+      "abaca",
+      "ampalaya",
+      "banana",
+      "cacao",
+      "calamansi",
+      "coffee",
+      "corn",
+      "eggplant",
+      "mango",
+      "papaya",
+      "pineapple",
+      "rice",
+      "rubber",
+      "sugarcane"
+    ],
+    "Loam": [
+      "abaca",
+      "ampalaya",
+      "banana",
+      "cacao",
+      "calamansi",
+      "cassava",
+      "corn",
+      "eggplant",
+      "garlic",
+      "mango",
+      "mungbean",
+      "okra",
+      "onion",
+      "papaya",
+      "rubber",
+      "sugarcane",
+      "sweet_potato",
+      "tobacco",
+      "tomato"
+    ],
+    "Sandy": [
+      "cassava",
+      "coconut",
+      "peanut"
+    ],
+    "Sandy Loam": [
+      "calamansi",
+      "cassava",
+      "coconut",
+      "corn",
+      "garlic",
+      "mango",
+      "mungbean",
+      "okra",
+      "onion",
+      "papaya",
+      "peanut",
+      "pineapple",
+      "sugarcane",
+      "sweet_potato",
+      "tobacco",
+      "tomato"
+    ],
+    "Silty Clay Loam": [
+      "rice"
+    ],
+    "Volcanic Loam": [
+      "abaca",
+      "banana",
+      "cacao",
+      "coconut",
+      "coffee",
+      "pineapple",
+      "rubber"
+    ]
+  }

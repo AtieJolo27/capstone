@@ -17,6 +17,11 @@ from app.services.history_service import get_prediction_history
 app = FastAPI()
 
 
+# Single-sensor setup for now - all zone/soil-type settings are stored
+# under this fixed device id.
+DEVICE_ID = "esp32-1"
+
+
 # =========================================================
 # CORS
 # =========================================================
@@ -39,6 +44,59 @@ def home():
     return {
         "message": "Soil Health Monitoring API is running"
     }
+
+
+# =========================================================
+# ZONE / SOIL TYPE SETTINGS
+#
+# The farmer sets the soil type for the active zone from the
+# app's "Add Zone" flow. This is stored in Supabase and looked
+# up every time a real sensor reading comes in, so crop and
+# fertilizer recommendations only consider crops suited to that
+# soil type.
+# =========================================================
+
+class SoilTypeInput(BaseModel):
+    soil_type: str
+
+
+@app.post("/device/soil-type")
+def set_soil_type(data: SoilTypeInput):
+
+    try:
+        supabase.table("device_settings").upsert({
+            "device_id": DEVICE_ID,
+            "soil_type": data.soil_type,
+        }).execute()
+
+    except Exception as e:
+        print("ERROR SAVING SOIL TYPE:")
+        print(e)
+        return {"status": "error", "message": str(e)}
+
+    return {"status": "success", "soil_type": data.soil_type}
+
+
+@app.get("/device/soil-type")
+def get_soil_type():
+
+    try:
+        response = (
+            supabase
+            .table("device_settings")
+            .select("soil_type")
+            .eq("device_id", DEVICE_ID)
+            .execute()
+        )
+
+        if response.data:
+            return {"soil_type": response.data[0]["soil_type"]}
+
+    except Exception as e:
+        print("ERROR READING SOIL TYPE:")
+        print(e)
+
+    return {"soil_type": None}
 
 
 # =========================================================
@@ -93,6 +151,7 @@ class SensorInput(BaseModel):
     nitrogen: int
     phosphorus: int
     potassium: int
+    soil_type: str | None = None
 
 
 # =========================================================
@@ -104,9 +163,12 @@ def predict(sensor: SensorInput):
 
     sensor_data = sensor.model_dump()
 
+    soil_type = sensor_data.pop("soil_type", None)
+
 
     crop_prediction = predict_crop(
-        sensor_data
+        sensor_data,
+        soil_type=soil_type
     )
 
 
@@ -306,13 +368,30 @@ def receive_realtime_sensor(
 
     try:
 
-        crop_prediction = predict_crop(
-            sensor_record
-        )
+        # Look up the farmer's currently set soil type for this
+        # device, so crop recommendations only consider crops
+        # suited to that soil type.
+        current_soil_type = None
 
-        fertilizer_prediction = predict_fertilizer(
+        try:
+            soil_type_response = (
+                supabase
+                .table("device_settings")
+                .select("soil_type")
+                .eq("device_id", DEVICE_ID)
+                .execute()
+            )
+
+            if soil_type_response.data:
+                current_soil_type = soil_type_response.data[0]["soil_type"]
+
+        except Exception as e:
+            print("ERROR READING SOIL TYPE (continuing without filter):")
+            print(e)
+
+        crop_prediction = predict_crop(
             sensor_record,
-            crop_prediction["best_crop"]
+            soil_type=current_soil_type
         )
 
         save_prediction(
@@ -320,22 +399,51 @@ def receive_realtime_sensor(
             crop_prediction
         )
 
-        save_fertilizer_prediction(
-            crop_prediction,
-            fertilizer_prediction
-        )
-
         print(
-            "CROP + FERTILIZER PREDICTION SAVED TO SUPABASE"
+            "CROP PREDICTION SAVED TO SUPABASE"
         )
 
     except Exception as e:
 
         print(
-            "ERROR RUNNING/SAVING PREDICTION:"
+            "ERROR RUNNING/SAVING CROP PREDICTION:"
         )
 
         print(e)
+
+
+    if crop_prediction is not None:
+
+        try:
+
+            fertilizer_prediction = predict_fertilizer(
+                sensor_record,
+                crop_prediction["best_crop"]
+            )
+
+            save_fertilizer_prediction(
+                crop_prediction,
+                fertilizer_prediction
+            )
+
+            print(
+                "FERTILIZER PREDICTION SAVED TO SUPABASE"
+            )
+
+        except Exception as e:
+
+            # This commonly happens when the crop model predicts a
+            # crop (e.g. a Philippine-specific crop like "calamansi")
+            # that the fertilizer model's crop_encoder was never
+            # trained on - the fertilizer dataset needs its own
+            # matching update before this crop will work here.
+            print(
+                "ERROR RUNNING/SAVING FERTILIZER PREDICTION "
+                "(crop likely not recognized by the fertilizer "
+                "model's older dataset):"
+            )
+
+            print(e)
 
 
     # =====================================================
