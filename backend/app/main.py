@@ -68,14 +68,34 @@ class ActiveZoneInput(BaseModel):
     zone_id: int
 
 
+def get_default_farm_id():
+    """Return the single farm used by the current single-device setup."""
+    response = (
+        supabase
+        .table("farms")
+        .select("id")
+        .order("id")
+        .limit(1)
+        .execute()
+    )
+    farms = response.data or []
+
+    if not farms:
+        raise ValueError("No farm is configured for this device.")
+
+    return farms[0]["id"]
+
+
 @app.post("/zones")
 def create_zone(data: ZoneInput):
 
     try:
+        farm_id = get_default_farm_id()
         response = (
             supabase
             .table("zones")
             .insert({
+                "farm_id": farm_id,
                 "name_en": data.name_en,
                 "name_tl": data.name_tl,
                 "soil_type": data.soil_type,
