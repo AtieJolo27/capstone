@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -64,26 +66,23 @@ class ZoneInput(BaseModel):
     soil_type: str
 
 
+EMPTY_BOUNDARY_GEOJSON = {"type": "FeatureCollection", "features": []}
+
+
 class ActiveZoneInput(BaseModel):
     zone_id: int
 
 
 def get_default_farm_id():
-    """Return the single farm used by the current single-device setup."""
-    response = (
-        supabase
-        .table("farms")
-        .select("id")
-        .order("id")
-        .limit(1)
-        .execute()
-    )
-    farms = response.data or []
+    """Return the farm configured for this single-device deployment."""
+    farm_id = os.getenv("DEFAULT_FARM_ID")
+    if not farm_id:
+        raise ValueError("DEFAULT_FARM_ID is not configured.")
 
-    if not farms:
-        raise ValueError("No farm is configured for this device.")
-
-    return farms[0]["id"]
+    try:
+        return int(farm_id)
+    except ValueError as exc:
+        raise ValueError("DEFAULT_FARM_ID must be an integer.") from exc
 
 
 @app.post("/zones")
@@ -96,9 +95,11 @@ def create_zone(data: ZoneInput):
             .table("zones")
             .insert({
                 "farm_id": farm_id,
+                "name": data.name_en.strip(),
                 "name_en": data.name_en,
                 "name_tl": data.name_tl,
                 "soil_type": data.soil_type,
+                "boundary_geojson": EMPTY_BOUNDARY_GEOJSON,
             })
             .execute()
         )
