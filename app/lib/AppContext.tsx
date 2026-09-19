@@ -13,7 +13,7 @@ interface Zone {
   soil_type: string;
 }
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'https://capstone-eem0.onrender.com';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'https://capstone-production-00bb.up.railway.app';
 
 interface AppContextType {
   theme: Theme;
